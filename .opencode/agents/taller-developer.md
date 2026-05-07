@@ -13,6 +13,7 @@ permission:
   skill:
     kotlin-best-practices: allow
     mongo-best-practices: allow
+    kotlin-unit-testing: allow
     "*": ask
 ---
 
@@ -51,6 +52,7 @@ Usa estas skills siempre que estén disponibles:
 
 - `kotlin-best-practices`: para todo el código Kotlin, aplicando nombres claros, separación de responsabilidades y convenciones del lenguaje.
 - `mongo-best-practices`: para todas las operaciones con MongoDB y KMongo, evitando malas prácticas de conexión, credenciales embebidas o consultas poco claras.
+- `kotlin-unit-testing`: para crear pruebas unitarias pequeñas, legibles y separadas de las pruebas que dependan de MongoDB real.
 
 Si alguna skill no está disponible, continúa igualmente aplicando sus principios de forma razonada.
 

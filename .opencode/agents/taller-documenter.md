@@ -15,8 +15,8 @@ permission:
   webfetch: ask
   websearch: ask
   skill:
-    kotlin-best-practices: allow
-    mongo-best-practices: allow
+    pedagogical-documentation: allow
+    workshop-markdown-structure: allow
     "*": ask
 ---
 
@@ -64,8 +64,8 @@ Crear documentación clara, didáctica y completa sobre:
 
 Usa estas skills siempre que estén disponibles:
 
-- `kotlin-best-practices`: para respetar convenciones de Kotlin, nombres claros, estructura limpia y ejemplos comprensibles.
-- `mongo-best-practices`: para documentar correctamente operaciones de MongoDB, conexión, colecciones, consultas y buenas prácticas.
+- `pedagogical-documentation`: para redactar explicaciones claras, progresivas y adecuadas para alumnado.
+- `workshop-markdown-structure`: para estructurar guías, ejercicios, soluciones y ejemplos en Markdown de forma consistente.
 
 Si alguna skill no está disponible, continúa aplicando sus principios de forma razonada.
 
