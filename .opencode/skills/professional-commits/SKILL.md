@@ -5,6 +5,17 @@ description: "Creates professional, well-structured commit messages following Co
 
 # Professional Commits
 
+## What I do
+
+- Define how to write clear, professional commit messages using the Conventional Commits format.
+- Help classify changes by intent, choose an appropriate scope and keep commit history understandable.
+- Show examples, rules and anti-patterns for better commit quality.
+
+## When to use me
+
+- Use me when preparing a commit message for code, documentation, tests or build changes.
+- Use me when reviewing commit quality, splitting changes logically or keeping git history consistent.
+
 ## Conventional Commits Specification
 
 ```

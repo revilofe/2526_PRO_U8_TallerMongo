@@ -5,6 +5,17 @@ description: "Best practices for clean and maintainable code in Kotlin. Use this
 
 # Kotlin Best Practices — Clean Code & SOLID
 
+## What I do
+
+- Define practical rules for writing clean, idiomatic and maintainable Kotlin.
+- Reinforce naming, immutability, null safety, function design, SOLID principles and KDoc usage.
+- Highlight common mistakes to avoid when evolving the codebase.
+
+## When to use me
+
+- Use me when writing or refactoring Kotlin code in this project.
+- Use me when reviewing readability, maintainability or consistency of Kotlin classes, functions and public APIs.
+
 ## Variables y Nomenclatura
 
 - Name classes with `PascalCase`: `MongoConnection`, `DatabaseManager`

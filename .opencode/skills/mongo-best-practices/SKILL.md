@@ -5,6 +5,17 @@ description: "Best practices for working with MongoDB and KMongo (Kotlin driver)
 
 # MongoDB Best Practices with KMongo
 
+## What I do
+
+- Provide concrete guidance for connecting to MongoDB Atlas from Kotlin using KMongo.
+- Cover database, collection and document operations, including CRUD, indexing, validation and error handling.
+- Emphasize safe configuration, reusable connections and common MongoDB pitfalls to avoid.
+
+## When to use me
+
+- Use me when implementing or reviewing MongoDB access in Kotlin.
+- Use me when working on connection setup, repositories, collection management, CRUD examples or data validation with KMongo.
+
 ## Conexión a MongoDB Atlas
 
 ### Configuración Básica

@@ -40,7 +40,7 @@
     "taller-developer": {
       "description": "Desarrolla la práctica CRUD de MongoDB con Kotlin y KMongo, manteniendo una implementación clara, didáctica y adecuada para alumnado de programación.",
       "mode": "primary",
-      "model": "OpenAI/GPT-5.4",
+//      "model": "GPT-5.4",
       "temperature": 0.2,
       "prompt": "{file:agents/taller-developer.md}",
       "permission": {
@@ -58,7 +58,7 @@
     "taller-documenter": {
       "description": "Genera y mejora la documentación didáctica del taller MongoDB con Kotlin, incluyendo README, explicaciones, ejemplos y guías para el alumnado.",
       "mode": "subagent",
-      "model": "OpenAI/GPT-5.4",
+//      "model": "GPT-5.4",
       "temperature": 0.2,
       "prompt": "{file:agents/taller-documenter.md}",
       "permission": {
@@ -76,7 +76,7 @@
     "git-committer": {
       "description": "Prepara commits limpios y profesionales siguiendo buenas prácticas de mensajes de commit, revisando previamente los cambios realizados.",
       "mode": "subagent",
-      "model": "OpenAI/GPT-5.4",
+//      "model": "GPT-5.4",
       "temperature": 0.1,
       "prompt": "{file:agents/git-committer.md}",
       "permission": {
@@ -86,7 +86,7 @@
         "webfetch": "deny",
         "websearch": "deny",
         "skill": {
-          "commit-*": "allow",
+          "professional-commits": "allow",
           "*": "ask"
         }
       }
