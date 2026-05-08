@@ -1,0 +1,72 @@
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{bookmark}
+\usepackage{lastpage}
+\usepackage{setspace}
+\usepackage{caption}
+
+\definecolor{titlecolor}{HTML}{17324D}
+\definecolor{accentcolor}{HTML}{2E6F95}
+\definecolor{textcolor}{HTML}{1F2933}
+\definecolor{rulecolor}{HTML}{D9E2EC}
+
+\renewcommand{\contentsname}{Indice}
+\setstretch{1.08}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\setlength{\emergencystretch}{3em}
+\setlist{itemsep=0.25em, topsep=0.35em}
+\captionsetup{labelfont=bf}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textsf{Taller practico de MongoDB con Kotlin y KMongo}}
+\fancyhead[R]{\textsf{\nouppercase{\leftmark}}}
+\fancyfoot[L]{\textsf{Proyecto educativo}}
+\fancyfoot[R]{\textsf{\thepage\ / \pageref{LastPage}}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{rulecolor}\leaders\hrule height \headrulewidth\hfill}}
+
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{titlecolor}}
+  {\thesection}{0.75em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{accentcolor}}
+  {\thesubsection}{0.75em}{}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries\color{accentcolor}}
+  {\thesubsubsection}{0.75em}{}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=accentcolor,
+  urlcolor=accentcolor,
+  citecolor=accentcolor,
+  pdftitle={Taller practico de MongoDB con Kotlin y KMongo},
+  pdfauthor={OpenAI Codex},
+  pdfsubject={Taller practico de MongoDB},
+  pdfcreator={Pandoc + XeLaTeX}
+}
+
+\AtBeginDocument{
+  \color{textcolor}
+  \begin{titlepage}
+    \centering
+    \vspace*{2.4cm}
+    {\fontsize{26}{32}\selectfont\bfseries\color{titlecolor} Taller practico de MongoDB\par}
+    \vspace{0.55cm}
+    {\fontsize{20}{24}\selectfont\color{accentcolor} Kotlin y KMongo\par}
+    \vspace{1.5cm}
+    {\large\textsf{Guia progresiva para trabajar con MongoDB Atlas desde Kotlin}\par}
+    \vspace{1.4cm}
+    {\normalsize\textsf{Documento generado a partir de doc/taller\_mongodb.md}\par}
+    \vfill
+    {\large\textsf{Proyecto 2526\_PRO\_U8\_mongo}\par}
+    \vspace{0.35cm}
+    {\normalsize\textsf{8 de mayo de 2026}\par}
+  \end{titlepage}
+  \tableofcontents
+  \newpage
+}

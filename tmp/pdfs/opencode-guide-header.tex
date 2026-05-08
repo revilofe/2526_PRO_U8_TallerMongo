@@ -1,0 +1,73 @@
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{tcolorbox}
+\usepackage{enumitem}
+\usepackage{bookmark}
+\usepackage{lastpage}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{caption}
+
+\definecolor{titlecolor}{HTML}{17324D}
+\definecolor{accentcolor}{HTML}{2E6F95}
+\definecolor{textcolor}{HTML}{1F2933}
+\definecolor{rulecolor}{HTML}{D9E2EC}
+\definecolor{codebg}{HTML}{F7F9FB}
+
+\renewcommand{\contentsname}{Indice}
+\setstretch{1.08}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\setlength{\emergencystretch}{3em}
+\setlist{itemsep=0.25em, topsep=0.35em}
+\captionsetup{labelfont=bf}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textsf{Guia de Configuracion de OpenCode}}
+\fancyhead[R]{\textsf{\nouppercase{\leftmark}}}
+\fancyfoot[L]{\textsf{Proyecto educativo}}
+\fancyfoot[R]{\textsf{\thepage\ / \pageref{LastPage}}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{rulecolor}\leaders\hrule height \headrulewidth\hfill}}
+
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{titlecolor}}
+  {\thesection}{0.75em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{accentcolor}}
+  {\thesubsection}{0.75em}{}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries\color{accentcolor}}
+  {\thesubsubsection}{0.75em}{}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=accentcolor,
+  urlcolor=accentcolor,
+  citecolor=accentcolor,
+  pdftitle={Guia de Configuracion de OpenCode},
+  pdfauthor={OpenAI Codex},
+  pdfsubject={Guia de configuracion de proyecto},
+  pdfcreator={Pandoc + XeLaTeX}
+}
+
+\AtBeginDocument{
+  \color{textcolor}
+  \begin{titlepage}
+    \centering
+    \vspace*{2.6cm}
+    {\fontsize{28}{34}\selectfont\bfseries\color{titlecolor} Guia de Configuracion de OpenCode\par}
+    \vspace{0.8cm}
+    {\Large\color{accentcolor} Preparacion de un proyecto con agentes, skills e instrucciones locales\par}
+    \vspace{1.6cm}
+    {\large\textsf{Documento generado a partir de la guia Markdown del repositorio}\par}
+    \vfill
+    {\large\textsf{Proyecto 2526\_PRO\_U8\_mongo}\par}
+    \vspace{0.35cm}
+    {\normalsize\textsf{8 de mayo de 2026}\par}
+  \end{titlepage}
+  \tableofcontents
+  \newpage
+}

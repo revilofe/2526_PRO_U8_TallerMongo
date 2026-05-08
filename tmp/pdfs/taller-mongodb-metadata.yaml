@@ -1,0 +1,16 @@
+title: "Taller practico de MongoDB con Kotlin y KMongo"
+lang: "es-ES"
+toc-title: "Indice"
+geometry:
+  - margin=2.5cm
+fontsize: 11pt
+documentclass: article
+mainfont: "TeX Gyre Pagella"
+sansfont: "DejaVu Sans"
+monofont: "DejaVu Sans Mono"
+classoption:
+  - oneside
+header-includes:
+  - |
+    \providecommand{\tightlist}{%
+      \setlength{\itemsep}{0.25em}\setlength{\parskip}{0pt}}
