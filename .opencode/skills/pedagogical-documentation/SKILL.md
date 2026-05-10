@@ -25,6 +25,7 @@ Write documentation that helps programming students understand the workshop step
 - Start from the learning objective before showing code.
 - Explain one concept at a time.
 - Prefer short paragraphs and direct sentences.
+- Address the student directly in second person whenever it improves clarity.
 - Use consistent terminology across the whole workshop.
 - Avoid unnecessary jargon; if a technical term is needed, define it briefly.
 - Make the progression explicit: what the student already knows, what they will do next and why it matters.
@@ -51,6 +52,8 @@ When documenting a new section, follow this order whenever possible:
 ## Style Rules
 - Use spanish of spain, not latin american spanish, for all documentation, exercises and solutions, to maintain consistency with the rest of the documentation and the target audience.
 - Use a professional but approachable tone.
+- Prefer direct phrasing aimed at the student, such as `vas a aprender`, `usarás`, `puedes` or `te conviene`.
+- Avoid impersonal formulas such as `el alumnado`, `se usará`, `se trabajará` or `la idea didáctica es` when a direct second-person sentence works better.
 - Prefer active voice.
 - Avoid overly long lists.
 - Use examples grounded in the workshop domain, such as books, users and loans.

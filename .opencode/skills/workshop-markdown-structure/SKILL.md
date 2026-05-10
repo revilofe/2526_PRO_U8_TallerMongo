@@ -37,6 +37,7 @@ Use a predictable structure so students can scan and follow each guide easily:
 - Use tables only when they improve comparison or quick lookup.
 - Use blockquotes for warnings, tips or reminders.
 - Keep sections compact and focused.
+- Keep section titles and explanatory text aligned with a student-facing voice in second person when appropriate.
 
 ## Code Example Rules
 
@@ -70,6 +71,8 @@ Describe what the learner has to achieve.
 ## Consistency Rules
 
 - Use spanish of spain for all documentation, exercises and solutions to maintain consistency with the target audience.
+- Prefer direct student-facing wording such as `vas a`, `puedes`, `usarás` or `verás`.
+- Avoid impersonal wording such as `el alumnado`, `se hará`, `se usará` or similar formulas when a direct sentence is clearer.
 - Keep naming aligned with the Kotlin codebase.
 - Reuse the same collection and model names throughout the docs.
 - Keep command examples minimal and realistic.
