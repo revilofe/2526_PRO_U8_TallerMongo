@@ -151,19 +151,19 @@ database.getCollection(collectionName).insertOne(Document("creada", true))
 
 ### 4.4. Utilidades de KMongo que vamos a utilizar
 
-| Import | Qué hace | Uso en el taller |
-|---|---|---|
-| `KMongo` | Crea el cliente MongoDB | Se usa en `MongoConnection` |
-| `getCollection` | Obtiene colecciones tipadas | Permite pedir `MongoCollection<Product>` o `MongoCollection<Libro>` |
-| `eq` | Filtro de igualdad | Buscar por nombre, título o identificador |
-| `gt` | Filtro “mayor que” | Buscar productos con precio superior a un mínimo |
-| `lte` | Filtro “menor o igual que” | Detectar productos sin stock o libros sin copias |
-| `inc` | Incrementa un valor numérico | Sumar stock o copias |
-| `setValue` | Cambia el valor de un campo | Actualizar precio, descuento o disponibilidad |
-| `unset` | Elimina un campo | Quitar el campo `descuento` |
-| `ascending` | Orden ascendente | Ordenar libros por título |
-| `replaceOneWithFilter` | Sustituye un documento completo según un filtro | Implementar `upsert` |
-| `replaceUpsert` | Inserta si no existe y reemplaza si existe | Completar la operación de `upsert` |
+| Import                 | Qué hace                                        | Uso en el taller                                                    |
+|------------------------|-------------------------------------------------|---------------------------------------------------------------------|
+| `KMongo`               | Crea el cliente MongoDB                         | Se usa en `MongoConnection`                                         |
+| `getCollection`        | Obtiene colecciones tipadas                     | Permite pedir `MongoCollection<Product>` o `MongoCollection<Libro>` |
+| `eq`                   | Filtro de igualdad                              | Buscar por nombre, título o identificador                           |
+| `gt`                   | Filtro “mayor que”                              | Buscar productos con precio superior a un mínimo                    |
+| `lte`                  | Filtro “menor o igual que”                      | Detectar productos sin stock o libros sin copias                    |
+| `inc`                  | Incrementa un valor numérico                    | Sumar stock o copias                                                |
+| `setValue`             | Cambia el valor de un campo                     | Actualizar precio, descuento o disponibilidad                       |
+| `unset`                | Elimina un campo                                | Quitar el campo `descuento`                                         |
+| `ascending`            | Orden ascendente                                | Ordenar libros por título                                           |
+| `replaceOneWithFilter` | Sustituye un documento completo según un filtro | Implementar `upsert`                                                |
+| `replaceUpsert`        | Inserta si no existe y reemplaza si existe      | Completar la operación de `upsert`                                  |
 
 Por ejemplo, esta consulta:
 
@@ -389,7 +389,14 @@ La clase valida que la URI y el nombre de la base de datos no estén vacíos. Si
 
 ### 6.4. Conexión a MongoDB
 
-La clase `MongoConnection` crea un cliente reutilizable con KMongo:
+La clase `MongoConnection` crea un cliente reutilizable con KMongo. Cumpliendo con uno de los principios de la programación orientada a objetos, el cliente se encapsula dentro de la clase `MongoConnection`. 
+
+```kotlin
+// Parte de la clase MongoConnection. Crea un cliente reutilizable.
+private val client: MongoClient by lazy { KMongo.createClient(config.uri) }
+```
+
+Utilizamos este mismo cliente para acceder a la base de datos y otras operaciones. El cliente permanece abierto mientras se necesite y se cierra al finalizar.
 
 ```kotlin
 MongoConnection(config).use { connection ->
@@ -412,6 +419,8 @@ La clase principal de este módulo es `DatabaseManager`.
 
 ### 7.2. Listar bases de datos
 
+Con el método `listDatabaseNames()` puedes obtener una lista de las bases de datos disponibles en el servidor. Ten en cuenta que solo aparecerán las bases de datos que tengan al menos una colección con datos.
+
 ```kotlin
 val databaseManager = DatabaseManager(connection.client())
 val names = databaseManager.listDatabaseNames()
@@ -419,6 +428,8 @@ println(names)
 ```
 
 ### 7.3. Seleccionar una base de datos
+
+Con el metodo `selectDatabase()` puedes obtener una instancia de `MongoDatabase` para una base de datos concreta. Sin embargo, esta operación no crea la base de datos en el servidor ni la hace visible hasta que insertas el primer documento.
 
 ```kotlin
 val academia = databaseManager.selectDatabase("academia")
@@ -429,6 +440,8 @@ En este punto `academia` puede no aparecer todavía al listar bases de datos, po
 
 ### 7.4. Materializar una base de datos
 
+Con el método `materializeDatabase()` puedes forzar la creación de una base de datos insertando un documento temporal en una colección de prueba. Esto hace que MongoDB reconozca la base de datos y la muestre al listar.
+
 ```kotlin
 databaseManager.materializeDatabase(databaseName = "academia", collectionName = "prueba")
 ```
@@ -436,6 +449,8 @@ databaseManager.materializeDatabase(databaseName = "academia", collectionName = 
 Esta operación inserta un documento temporal en una colección de prueba. A partir de ahí, MongoDB ya podrá mostrar la base de datos.
 
 ### 7.5. Eliminar una base de datos
+
+Con el método `dropDatabase()` puedes eliminar una base de datos completa. Ten cuidado, esta operación borra todas las colecciones y documentos que contiene la base de datos.
 
 ```kotlin
 databaseManager.dropDatabase("academia")
@@ -458,11 +473,9 @@ Comprobar cómo MongoDB crea una base de datos solo cuando contiene datos.
 5. Vuelve a listar las bases de datos.
 6. Elimina `academia`.
 
-#### 7.6.3. Resultado esperado
+#### 7.6.3. Solución
 
 Debes observar que `academia` solo aparece tras insertar el primer documento.
-
-#### 7.6.4. Solución
 
 ```kotlin
 val databaseManager = DatabaseManager(connection.client())
@@ -488,6 +501,8 @@ La clase principal de este módulo es `CollectionManager`.
 
 ### 8.2. Listar colecciones
 
+Con el método `listCollectionNames()` puedes obtener una lista de las colecciones disponibles en una base de datos concreta. Al igual que con las bases de datos, solo aparecerán las colecciones que tengan al menos un documento.
+
 ```kotlin
 val collectionManager = CollectionManager(database)
 println(collectionManager.listCollectionNames())
@@ -495,11 +510,15 @@ println(collectionManager.listCollectionNames())
 
 ### 8.3. Crear una colección explícitamente
 
+Con el método `createCollectionIfMissing()` puedes crear una colección de forma explícita. Sin embargo, ten en cuenta que MongoDB no mostrará la colección al listar hasta que insertes el primer documento.
+
 ```kotlin
 collectionManager.createCollectionIfMissing("libros")
 ```
 
 ### 8.4. Crear una colección de forma implícita
+
+Con el método `materializeCollection()` puedes forzar la creación de una colección insertando un documento temporal. Esto hace que MongoDB reconozca la colección y la muestre al listar.
 
 ```kotlin
 collectionManager.materializeCollection("usuarios")
@@ -508,6 +527,8 @@ collectionManager.materializeCollection("usuarios")
 La colección se crea cuando insertas el primer documento.
 
 ### 8.5. Renombrar y eliminar colecciones
+
+Con el método `renameCollection()` puedes cambiar el nombre de una colección. Con `dropCollection()` puedes eliminar una colección completa. Ten cuidado, esta última operación borra todos los documentos que contiene la colección.
 
 ```kotlin
 collectionManager.renameCollection("usuarios", "socios")
@@ -549,6 +570,15 @@ println(collections.listCollectionNames())
 
 ## 9. Módulo 3. Operaciones CRUD sobre documentos
 
+Para trabajar con documentos, lo ideal es usar colecciones tipadas. En este módulo usarás `MongoCollection<Product>` para gestionar productos de un catálogo. 
+
+Ten en cuenta que MongoDB no impone un esquema rígido, pero al usar colecciones tipadas con KMongo puedes beneficiarte de la seguridad de tipos y de una API más cómoda para construir consultas.
+
+La colección `productos` se usará para practicar las operaciones CRUD (Crear, Leer, Actualizar, Eliminar) sobre documentos de tipo `Product`.
+
+Será el repositorio `MongoProductRepository` el que implemente esas operaciones usando KMongo, y el servicio `ProductService` el que coordine la lógica de negocio y las validaciones.
+
+
 ### 9.1. Qué vas a aprender
 
 En MongoDB los datos se guardan como documentos BSON. En Kotlin trabajarás con `data class` para representar esos documentos de forma clara y tipada.
@@ -579,12 +609,17 @@ Esta separación te permite probar la lógica sin conectarte a MongoDB real.
 
 ### 9.2. Crear el servicio de productos
 
+Con la base de datos seleccionada, obtén la colección tipada `productos` y crea el servicio de productos:
+
 ```kotlin
 val products = database.getCollection<Product>("productos")
 val productService = ProductService(MongoProductRepository(products))
 ```
 
+
 ### 9.3. Insertar documentos
+
+Una vez que tienes el servicio, puedes insertar productos de forma sencilla. Para insertar un documento individual:
 
 ```kotlin
 val product = Product(
@@ -611,6 +646,8 @@ productService.registerMany(
 
 ### 9.4. Consultar documentos
 
+Para obtener todos los productos:
+
 ```kotlin
 val allProducts = productService.findAll()
 val expensiveProducts = productService.findExpensiveProducts(50.0)
@@ -624,6 +661,8 @@ collection.find(Product::precio gt minimumPrice).toList()
 
 ### 9.5. Actualizar documentos
 
+Usando el servicio, puedes actualizar productos de varias formas. Por ejemplo, para cambiar el precio de un producto concreto:
+
 ```kotlin
 productService.updatePrice("Libro Kotlin", 29.95)
 productService.applyDiscountByCategory("electronica", 10)
@@ -631,6 +670,7 @@ productService.increaseStockByCategory("libros", 50)
 ```
 
 También existe una operación de tipo `upsert`: actualiza si existe y crea si no existe.
+
 En `MongoProductRepository` se implementa con la extensión de KMongo `replaceOneWithFilter` y `replaceUpsert()` para trabajar con el documento `Product` completo y mantener `_id` como `String`.
 
 ```kotlin
@@ -640,6 +680,8 @@ productService.upsert(
 ```
 
 ### 9.6. Eliminar documentos
+
+Para eliminar un producto por su nombre:
 
 ```kotlin
 productService.deleteByName("Auriculares")
@@ -733,6 +775,8 @@ Y también usarás dos capas sencillas:
 
 ### 10.2. Modelos principales
 
+Un autor tiene un nombre, una nacionalidad y un año de nacimiento. Un libro tiene un título, el nombre del autor, un año de publicación, un género, un estado de disponibilidad y un número de copias. Un préstamo tiene el nombre del usuario, el título del libro prestado, la fecha del préstamo y un estado de devolución.
+
 ```kotlin
 import org.bson.types.ObjectId
 
@@ -769,7 +813,11 @@ data class Prestamo(
 )
 ```
 
+La clase `ObjectId` se usa para generar un identificador único por defecto para cada documento.
+
 ### 10.3. Crear el servicio de biblioteca
+
+El servicio de biblioteca se apoya en un repositorio que gestiona las tres colecciones relacionadas: `autores`, `libros` y `prestamos`. Para crear el servicio, primero obtén las colecciones tipadas y luego construye el servicio con el repositorio MongoDB.
 
 ```kotlin
 val bibliotecaService = BibliotecaService(
@@ -782,6 +830,16 @@ val bibliotecaService = BibliotecaService(
 ```
 
 ### 10.4. Operaciones disponibles
+
+Las operaciones del servicio de biblioteca incluyen:
+- Registrar autores, libros y préstamos.
+- Consultar libros disponibles y préstamos pendientes.
+- Marcar un préstamo como devuelto y actualizar las copias del libro.
+- Marcar como no disponibles los libros sin copias.
+- Borrar los préstamos devueltos.
+- Obtener un resumen con el recuento de documentos.
+
+Todas estas operaciones se implementan en el servicio `BibliotecaService` usando el repositorio `MongoLibraryRepository` para interactuar con MongoDB.
 
 ```kotlin
 bibliotecaService.registerAutores(autores)
