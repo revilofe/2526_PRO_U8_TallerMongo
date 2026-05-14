@@ -135,7 +135,7 @@ class MongoProductRepository(
     /**
      * Elimina todos los productos sin stock disponible.
      *
-     * @return Número de documentos eliminados.
+     * @return Número de documeOptions and set upsert to true.entos eliminados.
      */
     override fun deleteWithoutStock(): Long = collection.deleteMany(Product::stock lte 0).deletedCount
 }

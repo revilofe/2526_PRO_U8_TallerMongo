@@ -1,0 +1,38 @@
+sequenceDiagram
+    actor Alumno
+    participant Main
+    participant ProductService
+    participant MongoProductRepository
+    participant Productos as "MongoCollection<Product>"
+    participant BibliotecaService
+    participant MongoLibraryRepository
+    participant Prestamos as "MongoCollection<Prestamo>"
+    participant Libros as "MongoCollection<Libro>"
+
+    Alumno->>Main: ejecutar ejemplo del taller
+
+    rect rgb(245, 248, 255)
+        Note over Main,Productos: Registrar un producto
+        Main->>ProductService: register(product)
+        ProductService->>ProductService: validar datos
+        ProductService->>MongoProductRepository: insert(product)
+        MongoProductRepository->>Productos: insertOne(product)
+        Productos-->>MongoProductRepository: confirmacion
+        MongoProductRepository-->>ProductService: product
+        ProductService-->>Main: product
+    end
+
+    rect rgb(245, 255, 245)
+        Note over Main,Libros: Devolver un prestamo
+        Main->>BibliotecaService: returnLoan(prestamo)
+        BibliotecaService->>BibliotecaService: validar identificador
+        BibliotecaService->>MongoLibraryRepository: markLoanAsReturned(prestamo._id)
+        MongoLibraryRepository->>Prestamos: updateOne(... devuelto = true)
+        Prestamos-->>MongoLibraryRepository: modifiedCount
+        MongoLibraryRepository-->>BibliotecaService: true/false
+        BibliotecaService->>MongoLibraryRepository: increaseCopiesByTitle(prestamo.libroTitulo, 1)
+        MongoLibraryRepository->>Libros: updateOne(... copias += 1)
+        Libros-->>MongoLibraryRepository: modifiedCount
+        MongoLibraryRepository-->>BibliotecaService: true/false
+        BibliotecaService-->>Main: resultado final
+    end

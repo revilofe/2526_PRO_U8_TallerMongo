@@ -1,0 +1,55 @@
+classDiagram
+    class MongoConfig {
+        +String uri
+        +String databaseName
+        +fromEnvironment(env)
+    }
+
+    class MongoConnection {
+        -MongoConfig config
+        +client() MongoClient
+        +database() MongoDatabase
+        +close()
+    }
+
+    class DatabaseManager {
+        +listDatabaseNames() List~String~
+        +selectDatabase(databaseName) MongoDatabase
+        +materializeDatabase(databaseName, collectionName)
+        +dropDatabase(databaseName)
+    }
+
+    class CollectionManager {
+        +listCollectionNames() List~String~
+        +createCollectionIfMissing(collectionName)
+        +materializeCollection(collectionName, document)
+        +renameCollection(currentName, newName)
+        +dropCollection(collectionName)
+    }
+
+    class ProductService
+    class ProductRepository {
+        <<interface>>
+    }
+    class MongoProductRepository
+    class BibliotecaService
+    class LibraryRepository {
+        <<interface>>
+    }
+    class MongoLibraryRepository
+    class Product
+    class Autor
+    class Libro
+    class Prestamo
+    class LibraryCounts
+
+    MongoConnection --> MongoConfig : usa
+    ProductService --> ProductRepository : depende de
+    ProductRepository <|.. MongoProductRepository : implementa
+    MongoProductRepository --> Product : persiste
+    BibliotecaService --> LibraryRepository : depende de
+    LibraryRepository <|.. MongoLibraryRepository : implementa
+    MongoLibraryRepository --> Autor : persiste
+    MongoLibraryRepository --> Libro : persiste
+    MongoLibraryRepository --> Prestamo : persiste
+    BibliotecaService --> LibraryCounts : construye
