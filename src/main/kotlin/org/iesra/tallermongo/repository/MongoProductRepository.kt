@@ -1,22 +1,18 @@
 package org.iesra.tallermongo.repository
 
-import com.mongodb.client.MongoCollection
+import com.mongodb.client.model.Filters.eq
+import com.mongodb.client.model.Filters.gt
+import com.mongodb.client.model.Filters.lte
+import com.mongodb.client.model.ReplaceOptions
+import com.mongodb.client.model.Updates.inc
+import com.mongodb.client.model.Updates.set
+import com.mongodb.client.model.Updates.unset
+import com.mongodb.kotlin.client.MongoCollection
 import org.bson.Document
 import org.iesra.tallermongo.model.Product
-import org.litote.kmongo.eq
-import org.litote.kmongo.gt
-import org.litote.kmongo.inc
-import org.litote.kmongo.lte
-import org.litote.kmongo.replaceOneWithFilter
-import org.litote.kmongo.replaceUpsert
-import org.litote.kmongo.setValue
-import org.litote.kmongo.unset
 
 /**
- * Implementación MongoDB de operaciones CRUD de productos usando una colección tipada con KMongo.
- *
- * Todos los filtros y expresiones de actualización se construyen con helpers de
- * KMongo para mantener la implementación alineada con un taller centrado en Kotlin.
+ * Implementación MongoDB de operaciones CRUD de productos.
  *
  * @property collection Colección tipada sobre la que se ejecutan las operaciones CRUD de productos.
  */
@@ -60,7 +56,7 @@ class MongoProductRepository(
      * @param nombre Nombre del producto buscado.
      * @return El producto encontrado o `null` si no existe coincidencia.
      */
-    override fun findByName(nombre: String): Product? = collection.find(Product::nombre eq nombre).firstOrNull()
+    override fun findByName(nombre: String): Product? = collection.find(eq(Product::nombre.name, nombre)).firstOrNull()
 
     /**
      * Recupera los productos cuyo precio es superior al mínimo indicado.
@@ -69,7 +65,7 @@ class MongoProductRepository(
      * @return Productos cuyo precio es mayor que `minimumPrice`.
      */
     override fun findByMinimumPrice(minimumPrice: Double): List<Product> =
-        collection.find(Product::precio gt minimumPrice).toList()
+        collection.find(gt(Product::precio.name, minimumPrice)).toList()
 
     /**
      * Actualiza el precio del producto identificado por su nombre.
@@ -79,7 +75,7 @@ class MongoProductRepository(
      * @return `true` si se ha actualizado exactamente un producto.
      */
     override fun updatePrice(nombre: String, newPrice: Double): Boolean =
-        collection.updateOne(Product::nombre eq nombre, setValue(Product::precio, newPrice)).modifiedCount == 1L
+        collection.updateOne(eq(Product::nombre.name, nombre), set(Product::precio.name, newPrice)).modifiedCount == 1L
 
     /**
      * Incrementa el stock de todos los productos de una categoría.
@@ -89,7 +85,7 @@ class MongoProductRepository(
      * @return Número de documentos modificados.
      */
     override fun increaseStockByCategory(categoria: String, amount: Int): Long =
-        collection.updateMany(Product::categoria eq categoria, inc(Product::stock, amount)).modifiedCount
+        collection.updateMany(eq(Product::categoria.name, categoria), inc(Product::stock.name, amount)).modifiedCount
 
     /**
      * Guarda un descuento en todos los productos de una categoría.
@@ -99,14 +95,15 @@ class MongoProductRepository(
      * @return Número de documentos modificados.
      */
     override fun applyDiscountByCategory(categoria: String, descuento: Int): Long =
-        collection.updateMany(Product::categoria eq categoria, setValue(Product::descuento, descuento)).modifiedCount
+        collection.updateMany(eq(Product::categoria.name, categoria), set(Product::descuento.name, descuento)).modifiedCount
 
     /**
      * Elimina el campo `descuento` de todos los productos.
      *
      * @return Número de documentos modificados.
      */
-    override fun removeDiscounts(): Long = collection.updateMany(Document(), unset(Product::descuento)).modifiedCount
+    override fun removeDiscounts(): Long =
+        collection.updateMany(Document(), unset(Product::descuento.name)).modifiedCount
 
     /**
      * Sustituye un producto si ya existe o lo inserta si todavía no está en la colección.
@@ -115,12 +112,12 @@ class MongoProductRepository(
      * @return `true` si MongoDB reconoce la operación como válida.
      */
     override fun upsert(product: Product): Boolean =
-        // El filtro localiza el producto por nombre y `replaceUpsert` hace que MongoDB
+        // El filtro localiza el producto por nombre y `upsert` hace que MongoDB
         // inserte el documento si todavía no existe o lo reemplace si ya está creado.
-        collection.replaceOneWithFilter(
-            Product::nombre eq product.nombre,
+        collection.replaceOne(
+            eq(Product::nombre.name, product.nombre),
             product,
-            replaceUpsert(),
+            ReplaceOptions().upsert(true),
         ).wasAcknowledged()
 
     /**
@@ -130,12 +127,12 @@ class MongoProductRepository(
      * @return `true` si se ha eliminado exactamente un documento.
      */
     override fun deleteByName(nombre: String): Boolean =
-        collection.deleteOne(Product::nombre eq nombre).deletedCount == 1L
+        collection.deleteOne(eq(Product::nombre.name, nombre)).deletedCount == 1L
 
     /**
      * Elimina todos los productos sin stock disponible.
      *
-     * @return Número de documeOptions and set upsert to true.entos eliminados.
+     * @return Número de documentos eliminados.
      */
-    override fun deleteWithoutStock(): Long = collection.deleteMany(Product::stock lte 0).deletedCount
+    override fun deleteWithoutStock(): Long = collection.deleteMany(lte(Product::stock.name, 0)).deletedCount
 }

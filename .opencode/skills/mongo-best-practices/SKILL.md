@@ -1,308 +1,103 @@
 ---
 name: mongo-best-practices
-description: "Best practices for working with MongoDB and KMongo (Kotlin driver). Use this skill when implementing MongoDB operations, managing databases, collections, or documents in Kotlin."
+description: "Best practices for working with MongoDB from Kotlin using the official MongoDB Kotlin driver. Use this skill when implementing MongoDB operations, managing databases, collections, or documents in Kotlin."
 ---
 
-# MongoDB Best Practices with KMongo
+# MongoDB Best Practices with the Kotlin Driver
 
 ## What I do
 
-- Provide concrete guidance for connecting to MongoDB Atlas from Kotlin using KMongo.
-- Cover database, collection and document operations, including CRUD, indexing, validation and error handling.
-- Emphasize safe configuration, reusable connections and common MongoDB pitfalls to avoid.
+- Provide concrete guidance for connecting to MongoDB Atlas from Kotlin.
+- Cover database, collection and document operations, including CRUD, validation and error handling.
+- Emphasize safe configuration, reusable connections and clear examples for the workshop.
 
 ## When to use me
 
 - Use me when implementing or reviewing MongoDB access in Kotlin.
-- Use me when working on connection setup, repositories, collection management, CRUD examples or data validation with KMongo.
+- Use me when working on connection setup, repositories, collection management, CRUD examples or data validation.
 
 ## Conexión a MongoDB Atlas
 
-### Configuración Básica
+Usa siempre configuración externa para credenciales:
 
 ```kotlin
-import org.litote.kmongo.KMongo
+import com.mongodb.kotlin.client.MongoClient
+import com.mongodb.kotlin.client.MongoDatabase
 
 data class MongoConfig(
-    val uri: String,      // mongodb+srv://<user>:<password>@<cluster>.mongodb.net
-    val database: String  // Database name
+    val uri: String,
+    val databaseName: String,
 )
 
-// Never hardcode credentials
-object MongoConnection {
-    private var client: MongoClient? = null
+class MongoConnection(private val config: MongoConfig) : AutoCloseable {
+    private val client: MongoClient by lazy { MongoClient.create(config.uri) }
 
-    fun connect(config: MongoConfig): MongoClient {
-        return client ?: KMongo.createClient(config.uri).also { client = it }
-    }
+    fun database(): MongoDatabase = client.getDatabase(config.databaseName)
 
-    fun getDatabase(config: MongoConfig): MongoDatabase {
-        return connect(config).getDatabase(config.database)
-    }
-
-    fun close() {
-        client?.close()
-        client = null
+    override fun close() {
+        client.close()
     }
 }
 ```
 
-### Buenas Prácticas de Conexión
+Buenas prácticas:
 
-1. **Usar variables de entorno** para credenciales nunca hardcoded
-2. **Reutilizar el cliente** — no crear uno nuevo por operación
-3. **Cerrar conexiones** apropiadamente (use `use` o `close()`)
-4. **Timeouts adecuados**: configurar `socketTimeoutMS`, `connectTimeoutMS`
-5. **DNS SRV** es recomendado para Atlas (usa `mongodb+srv://`)
+1. Usa variables de entorno para credenciales.
+2. Reutiliza el cliente mientras la aplicación esté activa.
+3. Cierra el cliente con `use` o `close()`.
+4. Mantén nombres de bases de datos y colecciones validados.
+5. Usa `mongodb+srv://` para MongoDB Atlas cuando corresponda.
 
-## Gestión de Bases de Datos
+## Colecciones Tipadas
 
-### Listar Bases de Datos
-
-```kotlin
-// KMongo
-fun listDatabases(client: MongoClient): List<String> {
-    return client.listDatabaseNames()
-}
-```
-
-### Crear/Eliminar Base de Datos
+Prefiere colecciones tipadas con `data class` cuando el ejemplo trabaje con entidades del dominio:
 
 ```kotlin
-// En KMongo, las BD se crean implícitamente al insertar
-// Para forzar creación:
-database.getCollection<Document>("_init").insertOne(Document())
-```
-
-## Gestión de Colecciones
-
-### Listar Colecciones
-
-```kotlin
-fun listCollections(database: MongoDatabase): List<String> {
-    return database.listCollectionNames()
-}
-```
-
-### Crear Colección
-
-```kotlin
-// Implícita al insertar
-database.getCollection<Product>("productos")
-
-// Explícita con options
-database.createCollection("clientes")
-
-// Con validación de esquema (avanzado)
-database.createCollection("empleados", CreateCollectionOptions().validator(
-    Document(
-        "\$jsonSchema" to Document(
-            "bsonType" to "object",
-            "required" to listOf("nombre", "departamento"),
-            "properties" to Document(
-                "nombre" to Document("bsonType" to "string"),
-                "departamento" to Document("bsonType" to "string")
-            )
-        )
-    )
-))
-```
-
-### Renombrar/Eliminar Colección
-
-```kotlin
-// Renombrar
-database.getCollection<Document>("productos").rename("articulos")
-
-// Eliminar
-database.getCollection<Document>("articulos").drop()
-```
-
-## Gestión de Documentos — CRUD
-
-### Modelos de Datos
-
-```kotlin
-// Usar data classes para documentos
 data class Product(
-    val _id: String = ObjectId().toString(),
     val nombre: String,
     val precio: Double,
     val stock: Int,
-    val categorias: List<String> = emptyList()
+    val categoria: String,
 )
 
-data class Author(
-    val _id: String = ObjectId().toString(),
-    val nombre: String,
-    val nacionalidad: String,
-    val anioNacimiento: Int
-)
+val products = database.getCollection<Product>("productos")
 ```
 
-### Insertar Documentos
+Usa `Document` para comandos administrativos, documentos de inicialización o ejemplos en los que sea más didáctico mostrar la estructura BSON directamente.
+
+## CRUD
+
+Ejemplos básicos:
 
 ```kotlin
-import org.litote.kmongo.*
+import com.mongodb.client.model.Filters.eq
+import com.mongodb.client.model.Filters.gt
+import com.mongodb.client.model.ReplaceOptions
+import com.mongodb.client.model.Updates.inc
+import com.mongodb.client.model.Updates.set
 
-// Insertar uno
-val result = collection.insertOne(product)
+products.insertOne(product)
 
-// Insertar muchos
-val documents = listOf(product1, product2, product3)
-val insertResult = collection.insertMany(documents)
-val insertedIds = insertResult.insertedIds
-```
+val allProducts = products.find().toList()
+val expensiveProducts = products.find(gt(Product::precio.name, 50.0)).toList()
 
-### Leer Documentos
-
-```kotlin
-// Obtener todos
-val allProducts = collection.find().toList()
-
-// Buscar uno
-val product = collection.findOne(Product::nombre eq "Teclado Mecánico")
-
-// Filtrar con operadores
-val cheapProducts = collection.find(Product::precio lt 50.0).toList()
-val expensiveProducts = collection.find(Product::precio gte 100.0).toList()
-
-// Proyección (solo campos necesarios)
-val namesOnly = collection.find()
-    .projection(fields(include(Product::nombre, Product::precio), excludeId()))
-    .toList()
-
-// Ordenar y limitar
-val top3 = collection.find()
-    .sort(descending(Product::precio))
-    .limit(3)
-    .toList()
-```
-
-### Actualizar Documentos
-
-```kotlin
-import org.litote.kmongo.eq
-import org.litote.kmongo.set
-import org.litote.kmongo.inc
-import org.litote.kmongo.*
-
-// Actualizar uno
-val updateResult = collection.updateOne(
-    Product::nombre eq "Teclado Mecánico",
-    set(Product::precio, 89.99)
+products.updateOne(
+    eq(Product::nombre.name, "Libro Kotlin"),
+    set(Product::precio.name, 29.95),
 )
 
-// $set + $inc combinados
-collection.updateOne(
-    Product::nombre eq "Teclado Mecánico",
-    combine(
-        set(Product::precio, 89.99),
-        inc(Product::stock, -5)
-    )
+products.updateMany(
+    eq(Product::categoria.name, "libros"),
+    inc(Product::stock.name, 5),
 )
 
-// Actualizar muchos
-val updatedCount = collection.updateMany(
-    Product::precio lt 50.0,
-    mul(Product::precio, 0.9) // 10% descuento
-).modifiedCount
-
-// Upsert (actualizar o insertar si no existe)
-collection.updateOne(
-    Product::nombre eq "Webcam HD",
-    set(Product::precio, 45.00).set(Product::stock, 30),
-    upsert = true
+products.replaceOne(
+    eq(Product::nombre.name, product.nombre),
+    product,
+    ReplaceOptions().upsert(true),
 )
 
-// $unset - eliminar campo
-collection.updateMany(
-    Product::descuento exists true,
-    unset(Product::descuento)
-)
-```
-
-### Eliminar Documentos
-
-```kotlin
-// Eliminar uno
-val deletedOne = collection.deleteOne(Product::nombre eq "Auriculares BT")
-println("Eliminados: ${deletedOne.deletedCount}")
-
-// Eliminar muchos
-val deletedMany = collection.deleteMany(Product::stock lte 0)
-println("Eliminados: ${deletedMany.deletedCount}")
-
-// Vaciar colección
-collection.deleteMany()
-```
-
-## Operadores de Consulta Frecuentes
-
-| Operador | KMongo | Descripción |
-|----------|--------|-------------|
-| Igual | `eq` | Coincidencia exacta |
-| Menor que | `lt` | `<` |
-| Menor o igual | `lte` | `<=` |
-| Mayor que | `gt` | `>` |
-| Mayor o igual | `gte` | `>=` |
-| No igual | `ne` | `!=` |
-| In | `in` | Valor en lista |
-| Y | `and` | Condición AND |
-| O | `or` | Condición OR |
-| Existe | `exists` | Campo existe |
-
-```kotlin
-// Ejemplos
-collection.find(Product::precio gt 50.0 and Product::stock gte 10)
-collection.find(Product::categoria in listOf("electronica", "ropa"))
-collection.find(Product::nombre exists true)
-```
-
-## Operadores de Actualización
-
-| Operador | KMongo | Descripción |
-|----------|--------|-------------|
-| $set | `set` | Establece valor |
-| $unset | `unset` | Elimina campo |
-| $inc | `inc` | Incrementa/decrementa |
-| $mul | `mul` | Multiplica |
-| $push | `push` | Añade a array |
-| $pull | `pull` | Elimina de array |
-| $rename | `rename` | Renombra campo |
-| $addToSet | `addToSet` | Añade si no existe |
-
-## Indexación
-
-```kotlin
-// Crear índice
-collection.createIndex(ascending(Product::nombre))
-collection.createIndex(descending(Product::precio))
-
-// Índice compuesto
-collection.createIndex(
-    compoundIndex(
-        ascending(Product::categoria),
-        descending(Product::precio)
-    )
-)
-```
-
-## Validación y Manejo de Errores
-
-```kotlin
-// Validar antes de insertar
-fun insertProduct(product: Product): Result<Product> {
-    require(product.nombre.isNotBlank()) { "Nombre no puede estar vacío" }
-    require(product.precio >= 0) { "Precio no puede ser negativo" }
-    
-    return try {
-        collection.insertOne(product)
-        Result.success(product)
-    } catch (e: WriteErrorException) {
-        Result.failure(e)
-    }
-}
+products.deleteOne(eq(Product::nombre.name, "Libro Kotlin"))
 ```
 
 ## Patrones Recomendados

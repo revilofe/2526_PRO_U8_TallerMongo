@@ -1,7 +1,7 @@
 package org.iesra.tallermongo
 
+import com.mongodb.kotlin.client.MongoDatabase
 import org.bson.Document
-import org.iesra.tallermongo.connection.MongoDatabaseAdapter
 
 /**
  * Ayudante sencillo para las operaciones de colección.
@@ -18,7 +18,7 @@ import org.iesra.tallermongo.connection.MongoDatabaseAdapter
  * @property database Base de datos sobre la que se ejecutan las operaciones de colecciones.
  */
 class CollectionManager(
-    private val database: MongoDatabaseAdapter,
+    private val database: MongoDatabase,
 ) {
     /**
      * Lista las colecciones disponibles en la base de datos seleccionada.
@@ -50,7 +50,7 @@ class CollectionManager(
      */
     fun materializeCollection(collectionName: String, document: Document = Document("creada", true)) {
         MongoNameValidator.validateName(collectionName, "colección")
-        database.insertDocument(collectionName, document)
+        database.getCollection<Document>(collectionName).insertOne(document)
     }
 
     /**
@@ -83,6 +83,6 @@ class CollectionManager(
      */
     fun dropCollection(collectionName: String) {
         MongoNameValidator.validateName(collectionName, "colección")
-        database.dropCollection(collectionName)
+        database.getCollection<Document>(collectionName).drop()
     }
 }

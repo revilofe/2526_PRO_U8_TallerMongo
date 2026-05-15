@@ -4,7 +4,7 @@
 
 Este proyecto consiste en adaptar un taller práctico de MongoDB originalmente escrito en Python a una versión equivalente en Kotlin.
 
-El objetivo es construir un taller educativo, progresivo y claro, que enseñe operaciones CRUD con MongoDB Atlas utilizando Kotlin y KMongo.
+El objetivo es construir un taller educativo, progresivo y claro, que enseñe operaciones CRUD con MongoDB Atlas utilizando Kotlin y el driver de MongoDB para Kotlin.
 
 La fuente principal del contenido funcional y didáctico está en:
 
@@ -47,7 +47,7 @@ El objetivo final es disponer de:
 
 ### Tecnología objetivo
 
-- **Driver MongoDB objetivo**: KMongo
+- **Driver MongoDB objetivo**: driver de MongoDB para Kotlin
 - **Base de datos**: MongoDB Atlas
 - **Testing objetivo**: Kotest + MockK
 - **Estilo de tests objetivo**: `DescribeSpec` en tests nuevos, cuando el proyecto ya tenga esa base preparada
@@ -117,7 +117,7 @@ Si el proyecto evoluciona, también puede organizarse por paquetes más específ
 ### MongoDB
 
 - Usar la skill `mongo-best-practices` para las operaciones con MongoDB
-- Priorizar KMongo como librería principal
+- Usar el driver de MongoDB para Kotlin como única librería de acceso a MongoDB
 - Evitar credenciales hardcoded
 - Leer configuración desde variables de entorno o configuración externa
 - Validar datos antes de operar cuando sea razonable
@@ -139,7 +139,7 @@ Si el proyecto evoluciona, también puede organizarse por paquetes más específ
 - Mantener explicaciones progresivas, claras y orientadas a alumnado
 - Separar claramente enunciados, ejemplos y soluciones
 - Conservar la intención pedagógica del taller original en Python
-- Adaptar ejemplos y explicaciones al ecosistema Kotlin con KMongo
+- Adaptar ejemplos y explicaciones al ecosistema Kotlin con el driver de MongoDB para Kotlin
 - Usar la skill `pedagogical-documentation` para redactar contenido didáctico
 - Usar la skill `workshop-markdown-structure` para estructurar documentación y ejercicios
 
@@ -193,7 +193,7 @@ doc/taller_mongodb.md
 Reglas para trabajar con ella:
 
 - Mantener la misma progresión didáctica general: bases de datos, colecciones, documentos y proyecto integrado
-- Traducir los ejemplos de Python a Kotlin usando KMongo
+- Traducir los ejemplos de Python a Kotlin usando el driver de MongoDB para Kotlin
 - Adaptar ejercicios y soluciones al estilo Kotlin
 - No limitarse a una traducción literal cuando Kotlin requiera una estructura más clara o idiomática
 
@@ -243,12 +243,12 @@ Agentes definidos para este proyecto:
 
 1. Revisar `doc/taller_mongodb.md`
 2. Comprobar la estructura real existente del repositorio
-3. Preparar o ajustar dependencias del proyecto cuando se vaya a implementar MongoDB/KMongo
+3. Preparar o ajustar dependencias del proyecto cuando se vaya a implementar MongoDB desde Kotlin
 4. Definir la estructura base Kotlin adecuada para el taller
 
 ### Fase 2: Desarrollo del taller
 
-1. Crear la conexión a MongoDB Atlas con KMongo
+1. Crear la conexión a MongoDB Atlas con el driver de MongoDB para Kotlin
 2. Implementar ejemplos CRUD equivalentes a los de Python
 3. Crear ejercicios con soluciones en Kotlin
 4. Añadir tests cuando la infraestructura del proyecto lo soporte

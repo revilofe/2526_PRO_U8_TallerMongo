@@ -1,17 +1,17 @@
 package org.iesra.tallermongo.repository
 
-import com.mongodb.client.MongoCollection
+import com.mongodb.client.model.Filters.eq
+import com.mongodb.client.model.Filters.lte
+import com.mongodb.client.model.Sorts.ascending
+import com.mongodb.client.model.Updates.inc
+import com.mongodb.client.model.Updates.set
+import com.mongodb.kotlin.client.MongoCollection
 import org.iesra.tallermongo.model.Autor
 import org.iesra.tallermongo.model.Libro
 import org.iesra.tallermongo.model.Prestamo
-import org.litote.kmongo.ascending
-import org.litote.kmongo.eq
-import org.litote.kmongo.inc
-import org.litote.kmongo.lte
-import org.litote.kmongo.setValue
 
 /**
- * Implementación MongoDB del ejemplo integrado de biblioteca usando colecciones tipadas con KMongo.
+ * Implementación MongoDB del ejemplo integrado de biblioteca.
  *
  * Cada colección se inyecta explícitamente para que `BibliotecaService` pueda
  * mantenerse independiente de MongoDB durante las pruebas unitarias.
@@ -63,14 +63,14 @@ class MongoLibraryRepository(
      * @return Libros cuyo campo `disponible` es `true`.
      */
     override fun findAvailableBooks(): List<Libro> =
-        libros.find(Libro::disponible eq true).sort(ascending(Libro::titulo)).toList()
+        libros.find(eq(Libro::disponible.name, true)).sort(ascending(Libro::titulo.name)).toList()
 
     /**
      * Recupera los préstamos que todavía no se han devuelto.
      *
      * @return Lista de préstamos pendientes.
      */
-    override fun findPendingLoans(): List<Prestamo> = prestamos.find(Prestamo::devuelto eq false).toList()
+    override fun findPendingLoans(): List<Prestamo> = prestamos.find(eq(Prestamo::devuelto.name, false)).toList()
 
     /**
      * Marca como devuelto el préstamo indicado.
@@ -79,7 +79,7 @@ class MongoLibraryRepository(
      * @return `true` si se ha modificado exactamente un documento.
      */
     override fun markLoanAsReturned(prestamoId: String): Boolean =
-        prestamos.updateOne(Prestamo::_id eq prestamoId, setValue(Prestamo::devuelto, true)).modifiedCount == 1L
+        prestamos.updateOne(eq(Prestamo::_id.name, prestamoId), set(Prestamo::devuelto.name, true)).modifiedCount == 1L
 
     /**
      * Incrementa el número de copias del libro cuyo título coincide con el indicado.
@@ -89,7 +89,7 @@ class MongoLibraryRepository(
      * @return `true` si se ha actualizado exactamente un libro.
      */
     override fun increaseCopiesByTitle(titulo: String, amount: Int): Boolean =
-        libros.updateOne(Libro::titulo eq titulo, inc(Libro::copias, amount)).modifiedCount == 1L
+        libros.updateOne(eq(Libro::titulo.name, titulo), inc(Libro::copias.name, amount)).modifiedCount == 1L
 
     /**
      * Desactiva la disponibilidad de los libros que ya no tienen copias.
@@ -97,14 +97,14 @@ class MongoLibraryRepository(
      * @return Número de libros modificados.
      */
     override fun updateAvailabilityWithoutCopies(): Long =
-        libros.updateMany(Libro::copias lte 0, setValue(Libro::disponible, false)).modifiedCount
+        libros.updateMany(lte(Libro::copias.name, 0), set(Libro::disponible.name, false)).modifiedCount
 
     /**
      * Elimina de la colección los préstamos que ya figuran como devueltos.
      *
      * @return Número de préstamos eliminados.
      */
-    override fun deleteReturnedLoans(): Long = prestamos.deleteMany(Prestamo::devuelto eq true).deletedCount
+    override fun deleteReturnedLoans(): Long = prestamos.deleteMany(eq(Prestamo::devuelto.name, true)).deletedCount
 
     /**
      * Cuenta el número total de autores almacenados.

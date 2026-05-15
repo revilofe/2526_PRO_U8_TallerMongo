@@ -1,8 +1,8 @@
 package org.iesra.tallermongo
 
+import com.mongodb.kotlin.client.MongoClient
+import com.mongodb.kotlin.client.MongoDatabase
 import org.bson.Document
-import org.iesra.tallermongo.connection.MongoClientAdapter
-import org.iesra.tallermongo.connection.MongoDatabaseAdapter
 
 /**
  * Ayudante sencillo para las operaciones de base de datos del primer módulo.
@@ -13,7 +13,7 @@ import org.iesra.tallermongo.connection.MongoDatabaseAdapter
  * @property client Cliente MongoDB desde el que se consultan y gestionan las bases de datos.
  */
 class DatabaseManager(
-    private val client: MongoClientAdapter,
+    private val client: MongoClient,
 ) {
     /**
      * Lista los nombres de bases de datos visibles en el cluster MongoDB conectado.
@@ -29,7 +29,7 @@ class DatabaseManager(
      * @return La referencia a la base de datos indicada.
      * @throws IllegalArgumentException Cuando el nombre de la base de datos es inválido.
      */
-    fun selectDatabase(databaseName: String): MongoDatabaseAdapter {
+    fun selectDatabase(databaseName: String): MongoDatabase {
         MongoNameValidator.validateName(databaseName, "base de datos")
         return client.getDatabase(databaseName)
     }
@@ -48,7 +48,7 @@ class DatabaseManager(
         val database = selectDatabase(databaseName)
         // La base de datos aparece realmente en MongoDB cuando se escribe al menos
         // un documento en alguna colección. Por eso aquí se inserta un marcador mínimo.
-        database.insertDocument(collectionName, Document("creada", true))
+        database.getCollection<Document>(collectionName).insertOne(Document("creada", true))
     }
 
     /**

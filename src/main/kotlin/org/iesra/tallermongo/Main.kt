@@ -6,6 +6,8 @@ import org.iesra.tallermongo.model.Autor
 import org.iesra.tallermongo.model.Libro
 import org.iesra.tallermongo.model.Prestamo
 import org.iesra.tallermongo.model.Product
+import org.iesra.tallermongo.repository.MongoLibraryRepository
+import org.iesra.tallermongo.repository.MongoProductRepository
 import org.iesra.tallermongo.service.BibliotecaService
 import org.iesra.tallermongo.service.ProductService
 import java.time.LocalDate
@@ -22,27 +24,42 @@ fun main() {
     val config = runCatching { MongoConfig.fromEnvironment() }.getOrElse { error ->
         println(error.message)
         println("Ejemplo: export MONGODB_URI='mongodb+srv://usuario:password@cluster.mongodb.net/'")
-        println("Driver opcional: export MONGODB_DRIVER='MONGODB_KOTLIN' o 'KMONGO'")
         return
     }
 
     MongoConnection(config).use { connection ->
+        // Conecta con la base de datos y muestra las bases de datos visibles para verificar la conexión.
         val database = connection.database()
         val databaseManager = DatabaseManager(connection.client())
-        println("Driver seleccionado: ${config.driverProvider}")
         println("Bases de datos visibles: ${databaseManager.listDatabaseNames()}")
 
-        val productService = ProductService(database.productRepository("productos"))
-        val bibliotecaService = BibliotecaService(database.libraryRepository())
+        // Inicializa el servicio de productos con un repositorio MongoDB que usa la colección "productos".
+        val productService = ProductService(
+            MongoProductRepository(database.getCollection<Product>("productos")),
+        )
 
+        // Inicializa el servicio de biblioteca con un repositorio MongoDB que usa las colecciones correspondientes.
+        val bibliotecaService = BibliotecaService(
+            MongoLibraryRepository(
+                autores = database.getCollection<Autor>("autores"),
+                libros = database.getCollection<Libro>("libros"),
+                prestamos = database.getCollection<Prestamo>("prestamos"),
+            ),
+        )
+
+        // Ejecuta una pequeña demostración de uso de ambos servicios para mostrar cómo se pueden usar en conjunto.
         runWorkshopDemo(productService, bibliotecaService)
     }
 }
 
 private fun runWorkshopDemo(productService: ProductService, bibliotecaService: BibliotecaService) {
+
+    // Registra un nuevo producto y muestra el número total de productos registrados para verificar que la operación se ha realizado correctamente.
     productService.register(Product(nombre = "Libro Kotlin", precio = 34.95, stock = 20, categoria = "libros"))
     println("Productos registrados: ${productService.findAll().size}")
 
+
+    // Crea un nuevo autor, un nuevo libro asociado a ese autor y un nuevo préstamo de ese libro.
     val autores = listOf(Autor(nombre = "Miguel de Cervantes", nacionalidad = "Española", anioNacimiento = 1547))
     val libros = listOf(
         Libro(
@@ -57,8 +74,11 @@ private fun runWorkshopDemo(productService: ProductService, bibliotecaService: B
         Prestamo(usuario = "Ana García", libroTitulo = "El Quijote", fechaPrestamo = LocalDate.now().toString()),
     )
 
+    // Registra el autor, el libro asociado a ese autor y el préstamo de ese libro.
     bibliotecaService.registerAutores(autores)
     bibliotecaService.registerLibros(libros)
     bibliotecaService.registerPrestamos(prestamos)
+
+    // Muestra los libros disponibles para verificar que el libro registrado está disponible para préstamo.
     println("Libros disponibles: ${bibliotecaService.availableBooks().map { it.titulo }}")
 }

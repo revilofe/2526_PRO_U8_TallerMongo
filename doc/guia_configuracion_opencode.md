@@ -157,7 +157,7 @@ Este proyecto implementa una aplicación Kotlin para trabajar con MongoDB.
 - Kotlin
 - Gradle Kotlin DSL
 - MongoDB Atlas
-- KMongo
+- driver de MongoDB para Kotlin
 
 ## Skills del proyecto
 

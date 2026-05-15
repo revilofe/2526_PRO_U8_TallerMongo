@@ -2,21 +2,19 @@ classDiagram
     class MongoConfig {
         +String uri
         +String databaseName
-        +MongoDriverProvider driverProvider
         +fromEnvironment(env)
     }
 
     class MongoConnection {
         -MongoConfig config
-        -MongoClientFactory clientFactory
-        +client() MongoClientAdapter
-        +database() MongoDatabaseAdapter
+        +client() MongoClient
+        +database() MongoDatabase
         +close()
     }
 
     class DatabaseManager {
         +listDatabaseNames() List~String~
-        +selectDatabase(databaseName) MongoDatabaseAdapter
+        +selectDatabase(databaseName) MongoDatabase
         +materializeDatabase(databaseName, collectionName)
         +dropDatabase(databaseName)
     }
@@ -37,10 +35,10 @@ classDiagram
     class LibraryRepository {
         <<interface>>
     }
-    class MongoDatabaseAdapter {
-        +productRepository(collectionName) ProductRepository
-        +libraryRepository() LibraryRepository
-    }
+    class MongoProductRepository
+    class MongoLibraryRepository
+    class MongoClient
+    class MongoDatabase
     class Product
     class Autor
     class Libro
@@ -48,9 +46,14 @@ classDiagram
     class LibraryCounts
 
     MongoConnection --> MongoConfig : usa
-    MongoConnection --> MongoDatabaseAdapter : crea
-    MongoDatabaseAdapter --> ProductRepository : crea
-    MongoDatabaseAdapter --> LibraryRepository : crea
+    MongoConnection --> MongoClient : crea
+    MongoConnection --> MongoDatabase : selecciona
+    DatabaseManager --> MongoClient : usa
+    CollectionManager --> MongoDatabase : usa
+    MongoProductRepository ..|> ProductRepository
+    MongoLibraryRepository ..|> LibraryRepository
+    MongoProductRepository --> MongoDatabase : usa colección
+    MongoLibraryRepository --> MongoDatabase : usa colecciones
     ProductService --> ProductRepository : depende de
     BibliotecaService --> LibraryRepository : depende de
     ProductRepository --> Product : persiste

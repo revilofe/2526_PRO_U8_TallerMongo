@@ -10,7 +10,6 @@ repositories {
 }
 
 dependencies {
-    implementation("org.litote.kmongo:kmongo:4.11.0")
     implementation("org.mongodb:mongodb-driver-kotlin-sync:4.11.0")
     implementation("org.mongodb:bson-kotlin:4.11.0")
 

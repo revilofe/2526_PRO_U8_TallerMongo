@@ -8,12 +8,13 @@ import io.kotest.matchers.shouldBe
 import org.iesra.tallermongo.CollectionManager
 import org.iesra.tallermongo.DatabaseManager
 import org.iesra.tallermongo.config.MongoConfig
-import org.iesra.tallermongo.config.MongoDriverProvider
 import org.iesra.tallermongo.connection.MongoConnection
 import org.iesra.tallermongo.model.Autor
 import org.iesra.tallermongo.model.Libro
 import org.iesra.tallermongo.model.Prestamo
 import org.iesra.tallermongo.model.Product
+import org.iesra.tallermongo.repository.MongoLibraryRepository
+import org.iesra.tallermongo.repository.MongoProductRepository
 import org.iesra.tallermongo.service.BibliotecaService
 import org.iesra.tallermongo.service.LibraryCounts
 import org.iesra.tallermongo.service.ProductService
@@ -27,9 +28,6 @@ import org.iesra.tallermongo.service.ProductService
 @OptIn(ExperimentalKotest::class)
 class MongoWorkshopIntegrationTest : DescribeSpec({
     val mongoUri = System.getenv("MONGODB_URI")
-    val driverProvider = System.getenv("MONGODB_DRIVER")
-        ?.let(MongoDriverProvider::from)
-        ?: MongoDriverProvider.MONGODB_KOTLIN
 
     describe("integración del taller con MongoDB").config(enabled = !mongoUri.isNullOrBlank()) {
         it("debe ejecutar operaciones de base de datos, colección, productos y biblioteca") {
@@ -37,7 +35,6 @@ class MongoWorkshopIntegrationTest : DescribeSpec({
             val config = MongoConfig(
                 uri = mongoUri.orEmpty(),
                 databaseName = databaseName,
-                driverProvider = driverProvider,
             )
 
             MongoConnection(config).use { connection ->
@@ -58,8 +55,16 @@ class MongoWorkshopIntegrationTest : DescribeSpec({
                     collectionManager.listCollectionNames() shouldContain "productos"
 
                     runWorkshopAssertions(
-                        productService = ProductService(database.productRepository("productos")),
-                        bibliotecaService = BibliotecaService(database.libraryRepository()),
+                        productService = ProductService(
+                            MongoProductRepository(database.getCollection<Product>("productos")),
+                        ),
+                        bibliotecaService = BibliotecaService(
+                            MongoLibraryRepository(
+                                autores = database.getCollection<Autor>("autores"),
+                                libros = database.getCollection<Libro>("libros"),
+                                prestamos = database.getCollection<Prestamo>("prestamos"),
+                            ),
+                        ),
                     )
                 } finally {
                     databaseManager.dropDatabase(databaseName)
