@@ -65,6 +65,70 @@ val products = database.getCollection<Product>("productos")
 
 Usa `Document` para comandos administrativos, documentos de inicialización o ejemplos en los que sea más didáctico mostrar la estructura BSON directamente.
 
+## Modelado de Relaciones
+
+MongoDB no funciona igual que una base de datos relacional, pero eso no significa que debas relacionar documentos usando campos poco estables como nombres o títulos.
+
+Usa referencias por `_id` cuando las entidades tengan vida propia y puedan consultarse o modificarse por separado:
+
+```kotlin
+data class Autor(
+    val _id: String,
+    val nombre: String,
+)
+
+data class Libro(
+    val _id: String,
+    val titulo: String,
+    val autorId: String,
+)
+
+data class Prestamo(
+    val _id: String,
+    val usuario: String,
+    val libroId: String,
+)
+```
+
+Buenas prácticas para referencias:
+
+1. Referencia por `_id` cuando un documento apunta a otro documento independiente.
+2. Evita usar `nombre`, `titulo` o campos editables como si fueran claves externas.
+3. Guarda una copia de un dato descriptivo solo si necesitas histórico o lectura rápida, por ejemplo `libroTituloSnapshot`.
+4. Valida en la capa de servicio que el documento referenciado existe antes de guardar la referencia.
+5. Crea índices en campos de referencia consultados con frecuencia, como `libroId` o `autorId`.
+
+Usa documentos embebidos cuando los datos dependan claramente del documento principal y normalmente se lean o escriban juntos. Por ejemplo, puede tener sentido embeber líneas de dirección dentro de un usuario, pero no embeber todos los préstamos dentro de un libro si los préstamos crecen continuamente.
+
+## Consultas con Relaciones
+
+El equivalente más cercano a un `JOIN` en MongoDB es una agregación con `$lookup`.
+
+Ejemplo conceptual para recuperar préstamos junto con su libro:
+
+```javascript
+db.prestamos.aggregate([
+  {
+    $lookup: {
+      from: "libros",
+      localField: "libroId",
+      foreignField: "_id",
+      as: "libro"
+    }
+  },
+  {
+    $unwind: "$libro"
+  }
+])
+```
+
+Para un taller progresivo:
+
+1. Enseña primero CRUD con una sola colección.
+2. Introduce referencias por `_id` cuando aparezcan relaciones entre entidades.
+3. Explica `$lookup` en un módulo posterior de agregaciones, no como requisito del CRUD inicial.
+4. Si solo necesitas los préstamos de un libro, consulta directamente por `libroId` antes de añadir `$lookup`.
+
 ## CRUD
 
 Ejemplos básicos:
@@ -105,7 +169,7 @@ products.deleteOne(eq(Product::nombre.name, "Libro Kotlin"))
 1. **Repository Pattern**: Abstraer acceso a datos
 2. **Service Layer**: Lógica de negocio separada de acceso a datos
 3. **Configuration**: Usar data classes para configuración
-4. **Connection Pooling**: KMongo ya lo hace, pero asegurar una sola instancia
+4. **Connection reuse**: Mantener una sola instancia de `MongoClient` mientras la aplicación esté activa
 
 ## Errores Comunes a Evitar
 
@@ -117,3 +181,5 @@ products.deleteOne(eq(Product::nombre.name, "Libro Kotlin"))
 6. Usar `find().toString()` en vez de iterar correctamente
 7. Ignorar resultados de operaciones de escritura
 8. No crear índices para campos frecuentemente consultados
+9. Usar nombres o títulos como referencias entre colecciones cuando existe un `_id` estable
+10. Introducir `$lookup` antes de que el alumnado entienda bien filtros, inserciones y actualizaciones
