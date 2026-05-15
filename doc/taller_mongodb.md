@@ -213,22 +213,22 @@ Sobre esos dos dominios construiremos una pequeña arquitectura en Kotlin. La id
 #### 5.1.1. Qué representa cada clase y cómo se relaciona con las demás
 
 - `MongoConfig`: concentra la configuración de conexión. Sirve para leer la URI y el nombre de la base de datos desde variables de entorno y validar que esos valores existen.
-- `MongoConnection`: encapsula la apertura y el cierre del cliente MongoDB. Se apoya en `MongoConfig` y en una fábrica de cliente para usar el driver configurado.
+- `MongoConnection`: encapsula la apertura y el cierre del cliente `MongoClient`. Se apoya en `MongoConfig` para conocer la URI y la base de datos por defecto.
 - `DatabaseManager`: agrupa las operaciones básicas sobre bases de datos. Se usa en la primera parte del taller para aprender a listar, seleccionar, materializar y eliminar bases de datos.
-- `CollectionManager`: agrupa las operaciones sobre colecciones. Se apoya en una base de datos adaptada al driver configurado y te permite listar, crear, renombrar y eliminar colecciones.
+- `CollectionManager`: agrupa las operaciones sobre colecciones. Se apoya en `MongoDatabase` y te permite listar, crear, renombrar y eliminar colecciones.
 - `Product`: representa un documento de la colección `productos`. Es el modelo del dominio usado en el módulo CRUD.
-- `ProductRepository`: define el contrato de persistencia para productos. La base de datos adaptada crea la implementación concreta del driver activo.
+- `ProductRepository`: define el contrato de persistencia para productos. `MongoProductRepository` implementa ese contrato usando una `MongoCollection<Product>`.
 - `ProductService`: coordina la validación y el uso del repositorio de productos. Es el punto desde el que se lanzan las operaciones del módulo de productos.
 - `Autor`: representa un documento de la colección `autores`.
 - `Libro`: representa un documento de la colección `libros`.
 - `Prestamo`: representa un documento de la colección `prestamos`.
-- `LibraryRepository`: define el contrato de persistencia del ejemplo de biblioteca. La base de datos adaptada crea la implementación concreta del driver activo.
+- `LibraryRepository`: define el contrato de persistencia del ejemplo de biblioteca. `MongoLibraryRepository` implementa ese contrato usando colecciones tipadas.
 - `BibliotecaService`: coordina las validaciones y las operaciones del dominio de biblioteca. Aquí se ve mejor cómo una operación funcional puede implicar varias colecciones.
 - `LibraryCounts`: actúa como objeto resumen para devolver el recuento de documentos de las tres colecciones del dominio de biblioteca.
 
 Las relaciones más importantes del diagrama de clases son estas:
 
-- `MongoConnection` usa `MongoConfig` para crear la conexión con el driver seleccionado.
+- `MongoConnection` usa `MongoConfig` para crear el `MongoClient` y seleccionar la base de datos configurada.
 - `ProductService` depende de `ProductRepository`, no de una clase concreta del driver.
 - `BibliotecaService` depende de `LibraryRepository`, no de una clase concreta del driver.
 - Los repositorios MongoDB persisten los modelos del dominio (`Product`, `Autor`, `Libro`, `Prestamo`).
@@ -369,7 +369,7 @@ println(names)
 
 ### 7.3. Seleccionar una base de datos
 
-Con el método `selectDatabase()` puedes obtener la base de datos adaptada al driver configurado. Sin embargo, esta operación no crea la base de datos en el servidor ni la hace visible hasta que insertas el primer documento.
+Con el método `selectDatabase()` puedes obtener una referencia `MongoDatabase`. Sin embargo, esta operación no crea la base de datos en el servidor ni la hace visible hasta que insertas el primer documento.
 
 ```kotlin
 val academia = databaseManager.selectDatabase("academia")
@@ -435,7 +435,7 @@ Estudiar el código de `DatabaseManager` te ayudará a entender cómo funcionan 
 
 Diferencia entre los métodos del driver y los métodos creados por nosotros:
 
-- `listDatabaseNames()`, `getDatabase()` y `drop()` pertenecen al driver o al adaptador común que lo envuelve.
+- `listDatabaseNames()`, `getDatabase()` y `drop()` pertenecen al driver de MongoDB para Kotlin.
 - `selectDatabase()`, `materializeDatabase()` y `dropDatabase()` son métodos del taller que agrupan esas llamadas para que el ejemplo sea más fácil de seguir.
 - `materializeDatabase()` inserta un documento temporal porque MongoDB no muestra una base de datos vacía hasta que contiene datos.
 
@@ -484,13 +484,45 @@ collectionManager.renameCollection("usuarios", "socios")
 collectionManager.dropCollection("socios")
 ```
 
-### 8.6. Ejercicio 2. Colecciones de una biblioteca
+### 8.6. Ampliación. Colección con validación de esquema
 
-#### 8.6.1. Objetivo
+MongoDB permite guardar documentos con estructuras flexibles, pero también puedes pedirle que valide ciertas reglas. Esto es útil cuando hay campos obligatorios o tipos que no deben cambiar.
+
+En Kotlin puedes crear una colección con un validador JSON Schema usando `CreateCollectionOptions` y `Document`:
+
+```kotlin
+import com.mongodb.client.model.CreateCollectionOptions
+import org.bson.Document
+
+database.createCollection(
+    "empleados",
+    CreateCollectionOptions().validationOptions(
+        com.mongodb.client.model.ValidationOptions().validator(
+            Document(
+                "\$jsonSchema",
+                Document("bsonType", "object")
+                    .append("required", listOf("nombre", "departamento", "salario"))
+                    .append(
+                        "properties",
+                        Document("nombre", Document("bsonType", "string"))
+                            .append("departamento", Document("bsonType", "string"))
+                            .append("salario", Document("bsonType", "number")),
+                    ),
+            ),
+        ),
+    ),
+)
+```
+
+No necesitas usar validación de esquema en todos los ejercicios. En este taller la usaremos como ampliación para entender que MongoDB puede ser flexible, pero también puede aplicar restricciones cuando la aplicación lo necesita.
+
+### 8.7. Ejercicio 2. Colecciones de una biblioteca
+
+#### 8.7.1. Objetivo
 
 Crear y gestionar colecciones para una biblioteca.
 
-#### 8.6.2. Pasos
+#### 8.7.2. Pasos
 
 1. Selecciona la base de datos `biblioteca`.
 2. Crea las colecciones `libros`, `autores` y `socios`.
@@ -499,7 +531,7 @@ Crear y gestionar colecciones para una biblioteca.
 5. Elimina `autores`.
 6. Muestra el estado final.
 
-#### 8.6.3. Solución
+#### 8.7.3. Solución
 
 ```kotlin
 val database = databaseManager.selectDatabase("biblioteca")
@@ -609,6 +641,27 @@ Internamente, la implementación usa builders de MongoDB, por ejemplo:
 collection.find(gt(Product::precio.name, minimumPrice)).toList()
 ```
 
+También puedes consultar una colección directamente cuando quieras practicar opciones propias del driver, como proyección, ordenación y límite.
+
+La **proyección** permite decidir qué campos quieres recuperar. Por ejemplo, este código obtiene solo `nombre` y `precio`, oculta `_id`, ordena por precio ascendente y limita el resultado a tres productos:
+
+```kotlin
+import com.mongodb.client.model.Projections.excludeId
+import com.mongodb.client.model.Projections.fields
+import com.mongodb.client.model.Projections.include
+import com.mongodb.client.model.Sorts.ascending
+
+val productos = database.getCollection<Product>("productos")
+
+val resumen = productos.find()
+    .projection(fields(include(Product::nombre.name, Product::precio.name), excludeId()))
+    .sort(ascending(Product::precio.name))
+    .limit(3)
+    .toList()
+```
+
+Esta consulta es útil cuando no necesitas cargar el documento completo y solo quieres mostrar una parte de la información.
+
 ### 9.5. Actualizar documentos
 
 Usando el servicio, puedes actualizar productos de varias formas. Por ejemplo, para cambiar el precio de un producto concreto:
@@ -654,12 +707,19 @@ Practicar inserción y consulta de documentos con una colección `productos`.
 5. Inserta varios productos más.
 6. Muestra todos los productos.
 7. Muestra los productos con precio superior a 50 €.
+8. Muestra solo `nombre` y `precio`, sin `_id`, ordenados de menor a mayor precio.
 
 #### 9.7.3. Solución
 
 ```kotlin
+import com.mongodb.client.model.Projections.excludeId
+import com.mongodb.client.model.Projections.fields
+import com.mongodb.client.model.Projections.include
+import com.mongodb.client.model.Sorts.ascending
+
+val productos = database.getCollection<Product>("productos")
 val productService = ProductService(
-    MongoProductRepository(database.getCollection<Product>("productos"))
+    MongoProductRepository(productos)
 )
 
 productService.register(
@@ -677,6 +737,13 @@ productService.registerMany(
 
 println(productService.findAll())
 println(productService.findExpensiveProducts(50.0))
+
+val resumen = productos.find()
+    .projection(fields(include(Product::nombre.name, Product::precio.name), excludeId()))
+    .sort(ascending(Product::precio.name))
+    .toList()
+
+println(resumen)
 ```
 
 ### 9.8. Ejercicio 4. Actualización de inventario
@@ -784,6 +851,7 @@ val bibliotecaService = BibliotecaService(
 ### 10.4. Operaciones disponibles
 
 Las operaciones del servicio de biblioteca incluyen:
+
 - Registrar autores, libros y préstamos.
 - Consultar libros disponibles y préstamos pendientes.
 - Marcar un préstamo como devuelto y actualizar las copias del libro.
@@ -865,9 +933,213 @@ bibliotecaService.deleteReturnedLoans()
 println(bibliotecaService.counts())
 ```
 
-## 11. Pruebas del proyecto
+## 11. Ampliación. Relaciones entre colecciones
 
-### 11.1. Qué se prueba
+### 11.1. Qué vas a aprender
+
+En los módulos anteriores has trabajado con documentos y colecciones. Ahora vas a practicar una idea importante de modelado: cuando un documento se relaciona con otro documento independiente, normalmente conviene guardar una referencia por `_id`.
+
+MongoDB no impone claves foráneas como una base de datos relacional. Eso significa que la aplicación debe validar que los documentos referenciados existen antes de guardar una relación. A cambio, puedes modelar relaciones de forma flexible, incluyendo listas de referencias dentro de un documento.
+
+### 11.2. Referencias por `_id`
+
+En una aplicación real no conviene relacionar documentos por campos editables como `nombre`, `titulo` o `email`. Esos valores pueden repetirse o cambiar. El campo `_id`, en cambio, identifica de forma estable cada documento.
+
+Ejemplo de relación uno a muchos:
+
+```text
+Contacto.empresaId -> Empresa._id
+```
+
+Ejemplo de relación con varios participantes:
+
+```text
+Reunion.contactoIds -> Contacto._id
+```
+
+El segundo caso es especialmente útil para ver que MongoDB permite guardar arrays dentro de un documento.
+
+### 11.3. Modelos de la agenda profesional
+
+En esta ampliación vas a modelar una agenda profesional con empresas, contactos y reuniones:
+
+```kotlin
+import org.bson.types.ObjectId
+
+data class Empresa(
+    val _id: String = ObjectId().toHexString(),
+    val nombre: String,
+    val sector: String,
+)
+```
+
+```kotlin
+import org.bson.types.ObjectId
+
+data class Contacto(
+    val _id: String = ObjectId().toHexString(),
+    val nombre: String,
+    val telefono: String,
+    val email: String,
+    val empresaId: String,
+)
+```
+
+```kotlin
+import org.bson.types.ObjectId
+
+data class Reunion(
+    val _id: String = ObjectId().toHexString(),
+    val contactoIds: List<String>,
+    val fecha: String,
+    val asunto: String,
+    val realizada: Boolean = false,
+)
+```
+
+Fíjate en dos detalles:
+
+- `Contacto` no guarda el nombre de la empresa, sino `empresaId`.
+- `Reunion` no guarda un único contacto, sino una lista `contactoIds`.
+
+### 11.4. Consultar por una referencia
+
+Para buscar todos los contactos de una empresa concreta, filtra por `empresaId`:
+
+```kotlin
+val contactosEmpresa = contactos
+    .find(eq(Contacto::empresaId.name, empresa._id))
+    .toList()
+```
+
+Para buscar todas las reuniones en las que participa un contacto, puedes filtrar por el valor dentro del array:
+
+```kotlin
+val reunionesContacto = reuniones
+    .find(eq(Reunion::contactoIds.name, contacto._id))
+    .toList()
+```
+
+MongoDB interpreta esa igualdad como: “documentos cuyo array `contactoIds` contiene este valor”.
+
+### 11.5. Ejercicio 6. Agenda profesional con referencias por `_id`
+
+#### 11.5.1. Objetivo
+
+Crear una agenda profesional con tres colecciones relacionadas mediante `_id`: `empresas`, `contactos` y `reuniones`.
+
+#### 11.5.2. Pasos
+
+1. Crea o selecciona la base de datos `agenda_profesional`.
+2. Obtén las colecciones tipadas `empresas`, `contactos` y `reuniones`.
+3. Inserta al menos 3 empresas.
+4. Inserta varios contactos usando `empresaId` para relacionarlos con su empresa.
+5. Inserta varias reuniones usando `contactoIds` para indicar todos los contactos participantes.
+6. Consulta los contactos de una empresa concreta.
+7. Consulta las reuniones pendientes de un contacto concreto.
+8. Marca una reunión como realizada.
+9. Borra las reuniones realizadas.
+10. Muestra el recuento final de documentos en cada colección.
+
+#### 11.5.3. Solución orientativa
+
+```kotlin
+import com.mongodb.client.model.Filters.and
+import com.mongodb.client.model.Filters.eq
+import com.mongodb.client.model.Updates.set
+
+val databaseManager = DatabaseManager(connection.client())
+val database = databaseManager.selectDatabase("agenda_profesional")
+val empresas = database.getCollection<Empresa>("empresas")
+val contactos = database.getCollection<Contacto>("contactos")
+val reuniones = database.getCollection<Reunion>("reuniones")
+
+val ies = Empresa(nombre = "IES Ribera del Arga", sector = "Educación")
+val editorial = Empresa(nombre = "Editorial Norte", sector = "Publicación")
+val consultora = Empresa(nombre = "Data Norte", sector = "Consultoría")
+
+empresas.insertMany(listOf(ies, editorial, consultora))
+
+val ana = Contacto(
+    nombre = "Ana García",
+    telefono = "600111222",
+    email = "ana@iesra.example",
+    empresaId = ies._id,
+)
+val luis = Contacto(
+    nombre = "Luis Martín",
+    telefono = "600222333",
+    email = "luis@editorial.example",
+    empresaId = editorial._id,
+)
+val maria = Contacto(
+    nombre = "María López",
+    telefono = "600333444",
+    email = "maria@datanorte.example",
+    empresaId = consultora._id,
+)
+
+contactos.insertMany(listOf(ana, luis, maria))
+
+val revisionProyecto = Reunion(
+    contactoIds = listOf(ana._id, maria._id),
+    fecha = "2026-05-18",
+    asunto = "Revisión del proyecto MongoDB",
+)
+val reunionEditorial = Reunion(
+    contactoIds = listOf(luis._id),
+    fecha = "2026-05-20",
+    asunto = "Material didáctico",
+)
+
+reuniones.insertMany(listOf(revisionProyecto, reunionEditorial))
+
+val contactosDelInstituto = contactos
+    .find(eq(Contacto::empresaId.name, ies._id))
+    .toList()
+
+val reunionesPendientesDeAna = reuniones
+    .find(and(eq(Reunion::contactoIds.name, ana._id), eq(Reunion::realizada.name, false)))
+    .toList()
+
+reuniones.updateOne(
+    eq(Reunion::_id.name, revisionProyecto._id),
+    set(Reunion::realizada.name, true),
+)
+
+reuniones.deleteMany(eq(Reunion::realizada.name, true))
+
+println(contactosDelInstituto)
+println(reunionesPendientesDeAna)
+println("Empresas: ${empresas.countDocuments()}")
+println("Contactos: ${contactos.countDocuments()}")
+println("Reuniones: ${reuniones.countDocuments()}")
+```
+
+### 11.6. Ampliación. Consultas tipo `JOIN` con `$lookup`
+
+Cuando necesitas recuperar documentos de varias colecciones en una misma consulta, MongoDB ofrece agregaciones. El operador más parecido a un `JOIN` de SQL es `$lookup`.
+
+Ejemplo conceptual para obtener reuniones junto con los contactos participantes:
+
+```javascript
+db.reuniones.aggregate([
+  {
+    $lookup: {
+      from: "contactos",
+      localField: "contactoIds",
+      foreignField: "_id",
+      as: "contactos"
+    }
+  }
+])
+```
+
+No necesitas `$lookup` para hacer CRUD básico. Si solo quieres buscar las reuniones de un contacto, basta con filtrar por `contactoIds`. Deja `$lookup` para cuando realmente necesites combinar datos de varias colecciones en una misma salida.
+
+## 12. Pruebas del proyecto
+
+### 12.1. Qué se prueba
 
 Las pruebas unitarias no necesitan MongoDB real. Se centran en:
 
@@ -876,7 +1148,7 @@ Las pruebas unitarias no necesitan MongoDB real. Se centran en:
 - Comportamiento de `ProductService` con `ProductRepository` simulado.
 - Comportamiento de `BibliotecaService` con `LibraryRepository` simulado.
 
-### 11.2. Herramientas usadas
+### 12.2. Herramientas usadas
 
 - Kotest como framework de pruebas.
 - `DescribeSpec` como estilo de especificación.
@@ -901,9 +1173,9 @@ class ProductServiceTest : DescribeSpec({
 })
 ```
 
-## 12. Ejecutar el proyecto
+## 13. Ejecutar el proyecto
 
-### 12.1. Ejecutar las pruebas
+### 13.1. Ejecutar las pruebas
 
 ```text
 ./gradlew test
@@ -917,7 +1189,7 @@ src/test/kotlin/org/iesra/tallermongo/integration/MongoWorkshopIntegrationTest.k
 
 Esta prueba usa una base de datos temporal llamada `taller_mongo_integration_test`, ejecuta operaciones reales contra MongoDB y la elimina al finalizar.
 
-#### 12.1.1. Comportamiento si no hay conexión configurada
+#### 13.1.1. Comportamiento si no hay conexión configurada
 
 La prueba de integración solo se ejecuta si existe la variable `MONGODB_URI`. Si no la defines, Gradle no falla: la prueba se marcará como omitida.
 
@@ -929,7 +1201,7 @@ tests="1" skipped="1" failures="0" errors="0"
 
 Esto significa que la prueba está preparada y compila, pero no se ha ejecutado contra MongoDB real porque no había una URI disponible.
 
-#### 12.1.2. Ejecutar la prueba de integración contra MongoDB Atlas
+#### 13.1.2. Ejecutar la prueba de integración contra MongoDB Atlas
 
 Para ejecutarla realmente, define la URI de Atlas y lanza los tests con una JVM compatible:
 
@@ -948,7 +1220,7 @@ export MONGODB_DATABASE="taller_mongo"
 
 La prueba de integración no usa esa base de datos por defecto: trabaja con `taller_mongo_integration_test` para que no mezcles datos de prueba con datos del taller.
 
-### 12.2. Ejecutar la aplicación
+### 13.2. Ejecutar la aplicación
 
 Primero define la configuración:
 
@@ -959,11 +1231,37 @@ export MONGODB_DATABASE="taller_mongo"
 
 Después ejecuta `Main.kt` desde el IDE o configura una tarea de ejecución Gradle si el proyecto la incorpora más adelante.
 
-## 13. Buenas prácticas aplicadas
+## 14. Resumen de operaciones principales
+
+| Operación | Driver de MongoDB para Kotlin |
+|-----------|--------------------------------|
+| Crear cliente | `MongoClient.create(uri)` |
+| Seleccionar base de datos | `client.getDatabase("taller_mongo")` |
+| Listar bases de datos | `client.listDatabaseNames()` |
+| Eliminar base de datos | `database.drop()` |
+| Obtener colección tipada | `database.getCollection<Product>("productos")` |
+| Listar colecciones | `database.listCollectionNames()` |
+| Crear colección | `database.createCollection("clientes")` |
+| Eliminar colección | `database.getCollection<Document>("clientes").drop()` |
+| Insertar un documento | `collection.insertOne(product)` |
+| Insertar varios documentos | `collection.insertMany(products)` |
+| Buscar todos | `collection.find().toList()` |
+| Buscar con filtro | `collection.find(eq("campo", valor)).toList()` |
+| Ordenar | `collection.find().sort(ascending("campo"))` |
+| Limitar resultados | `collection.find().limit(3)` |
+| Actualizar uno | `collection.updateOne(filter, update)` |
+| Actualizar varios | `collection.updateMany(filter, update)` |
+| Reemplazar con upsert | `collection.replaceOne(filter, document, ReplaceOptions().upsert(true))` |
+| Eliminar uno | `collection.deleteOne(filter)` |
+| Eliminar varios | `collection.deleteMany(filter)` |
+| Contar documentos | `collection.countDocuments()` |
+
+## 15. Buenas prácticas aplicadas
 
 - No hay credenciales en el código fuente.
 - Se usan variables de entorno para la conexión.
 - La documentación del taller usa el driver oficial de MongoDB para Kotlin.
 - Se usan colecciones tipadas con `data class`.
+- Las relaciones nuevas se modelan con referencias por `_id`.
 - La lógica se puede probar sin MongoDB real mediante interfaces y MockK.
 - Las operaciones peligrosas, como eliminar bases de datos, están separadas en métodos explícitos.
