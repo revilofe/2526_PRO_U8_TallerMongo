@@ -1265,3 +1265,196 @@ Después ejecuta `Main.kt` desde el IDE o configura una tarea de ejecución Grad
 - Las relaciones nuevas se modelan con referencias por `_id`.
 - La lógica se puede probar sin MongoDB real mediante interfaces y MockK.
 - Las operaciones peligrosas, como eliminar bases de datos, están separadas en métodos explícitos.
+
+## 16. Proyecto integrado. Mediateca con relaciones por `_id`
+
+### 16.1. Objetivo
+
+Aplicar todo lo aprendido en un dominio nuevo: una mediateca que gestiona directores, películas, usuarios y préstamos.
+
+En este ejercicio debes modelar las relaciones entre colecciones usando referencias por `_id`, no nombres ni títulos. También practicarás inserciones, consultas directas, consultas con `$lookup`, actualizaciones y borrados.
+
+### 16.2. Modelo de datos propuesto
+
+Usa estos modelos como punto de partida:
+
+```kotlin
+import org.bson.types.ObjectId
+
+data class Director(
+    val _id: String = ObjectId().toHexString(),
+    val nombre: String,
+    val pais: String,
+)
+```
+
+```kotlin
+import org.bson.types.ObjectId
+
+data class Pelicula(
+    val _id: String = ObjectId().toHexString(),
+    val titulo: String,
+    val directorId: String,
+    val genero: String,
+    val anio: Int,
+    val copias: Int,
+    val disponible: Boolean = true,
+)
+```
+
+```kotlin
+import org.bson.types.ObjectId
+
+data class UsuarioMediateca(
+    val _id: String = ObjectId().toHexString(),
+    val nombre: String,
+    val email: String,
+)
+```
+
+```kotlin
+import org.bson.types.ObjectId
+
+data class PrestamoPelicula(
+    val _id: String = ObjectId().toHexString(),
+    val peliculaId: String,
+    val usuarioId: String,
+    val fechaPrestamo: String,
+    val devuelto: Boolean = false,
+)
+```
+
+Las relaciones deben quedar así:
+
+```text
+Pelicula.directorId -> Director._id
+PrestamoPelicula.peliculaId -> Pelicula._id
+PrestamoPelicula.usuarioId -> UsuarioMediateca._id
+```
+
+### 16.3. Datos iniciales obligatorios
+
+Todos debéis partir de los mismos datos para que las consultas tengan resultados comparables.
+
+```kotlin
+val bong = Director(nombre = "Bong Joon-ho", pais = "Corea del Sur")
+val nolan = Director(nombre = "Christopher Nolan", pais = "Reino Unido")
+val gerwig = Director(nombre = "Greta Gerwig", pais = "Estados Unidos")
+
+val directoresIniciales = listOf(bong, nolan, gerwig)
+```
+
+```kotlin
+val parasitos = Pelicula(
+    titulo = "Parásitos",
+    directorId = bong._id,
+    genero = "Thriller",
+    anio = 2019,
+    copias = 3,
+)
+val laAsistenta = Pelicula(
+    titulo = "La asistenta",
+    directorId = bong._id,
+    genero = "Drama",
+    anio = 2016,
+    copias = 2,
+)
+val origen = Pelicula(
+    titulo = "Origen",
+    directorId = nolan._id,
+    genero = "Ciencia ficción",
+    anio = 2010,
+    copias = 4,
+)
+val dunkerque = Pelicula(
+    titulo = "Dunkerque",
+    directorId = nolan._id,
+    genero = "Bélica",
+    anio = 2017,
+    copias = 1,
+)
+val barbie = Pelicula(
+    titulo = "Barbie",
+    directorId = gerwig._id,
+    genero = "Comedia",
+    anio = 2023,
+    copias = 5,
+)
+
+val peliculasIniciales = listOf(parasitos, laAsistenta, origen, dunkerque, barbie)
+```
+
+```kotlin
+val ana = UsuarioMediateca(nombre = "Ana García", email = "ana@example.com")
+val luis = UsuarioMediateca(nombre = "Luis Martín", email = "luis@example.com")
+val maria = UsuarioMediateca(nombre = "María López", email = "maria@example.com")
+
+val usuariosIniciales = listOf(ana, luis, maria)
+```
+
+```kotlin
+val prestamosIniciales = listOf(
+    PrestamoPelicula(peliculaId = laAsistenta._id, usuarioId = ana._id, fechaPrestamo = "2026-05-10"),
+    PrestamoPelicula(peliculaId = laAsistenta._id, usuarioId = luis._id, fechaPrestamo = "2026-05-11"),
+    PrestamoPelicula(peliculaId = origen._id, usuarioId = maria._id, fechaPrestamo = "2026-05-12"),
+    PrestamoPelicula(peliculaId = barbie._id, usuarioId = ana._id, fechaPrestamo = "2026-05-13"),
+)
+```
+
+### 16.4. Tareas
+
+1. Crea o selecciona la base de datos `mediateca_digital`.
+2. Obtén las colecciones tipadas `directores`, `peliculas`, `usuarios` y `prestamos`.
+3. Inserta los directores, películas, usuarios y préstamos indicados.
+4. Consulta todas las películas de `Bong Joon-ho` usando `directorId`.
+5. Consulta todos los préstamos pendientes de `Ana García` usando `usuarioId`.
+6. Realiza una agregación con `$lookup` para mostrar préstamos junto con los datos de la película.
+7. Realiza otra agregación con `$lookup` para mostrar películas junto con los datos del director.
+8. Marca como devuelto el préstamo de `Ana García` de la película `Barbie`.
+9. Decrementa en 1 las copias de `Origen`.
+10. Marca como no disponibles las películas con `copias` menor o igual que 0.
+11. Elimina todos los préstamos de la película `La asistenta`.
+12. Muestra el recuento final de documentos en cada colección.
+
+### 16.5. Pistas
+
+Para consultar por `_id`, primero localiza el documento principal:
+
+```kotlin
+val peliculaLaAsistenta = peliculas.find(eq(Pelicula::titulo.name, "La asistenta")).first()
+```
+
+Después usa su `_id` como referencia:
+
+```kotlin
+prestamos.deleteMany(eq(PrestamoPelicula::peliculaId.name, peliculaLaAsistenta._id))
+```
+
+Para hacer una consulta tipo `JOIN`, usa una agregación con `$lookup`. Puedes expresarla con `Document` para centrarte en la estructura de MongoDB:
+
+```kotlin
+import org.bson.Document
+
+val prestamosConPelicula = prestamos.aggregate<Document>(
+    listOf(
+        Document(
+            "\$lookup",
+            Document("from", "peliculas")
+                .append("localField", PrestamoPelicula::peliculaId.name)
+                .append("foreignField", "_id")
+                .append("as", "pelicula"),
+        ),
+        Document("\$unwind", "\$pelicula"),
+    ),
+).toList()
+```
+
+### 16.6. Resultado esperado
+
+Al terminar, debes poder explicar:
+
+- por qué `Pelicula` guarda `directorId` y no `directorNombre`
+- por qué `PrestamoPelicula` guarda `peliculaId` y `usuarioId`
+- cómo filtrar documentos usando referencias por `_id`
+- cómo usar `$lookup` cuando necesitas combinar datos de dos colecciones
+- qué documentos se han actualizado y cuáles se han eliminado
