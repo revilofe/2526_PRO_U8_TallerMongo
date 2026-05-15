@@ -68,6 +68,9 @@ src/
 ├── main/kotlin/org/iesra/tallermongo/
 │   ├── config/
 │   ├── connection/
+│   ├── ejercicios/
+│   │   ├── Ejercicio1.kt
+│   │   └── Ejercicio2.kt
 │   ├── model/
 │   ├── repository/
 │   ├── service/
@@ -79,6 +82,8 @@ src/
     ├── integration/
     └── service/
 ```
+
+El paquete `org.iesra.tallermongo.ejercicios` está reservado para que añadas tus soluciones con el formato `Ejercicio1.kt`, `Ejercicio2.kt`, `Ejercicio3.kt`, etc.
 
 ## Configuración
 
