@@ -1,7 +1,7 @@
 package org.iesra.tallermongo
 
-import com.mongodb.client.MongoDatabase
 import org.bson.Document
+import org.iesra.tallermongo.connection.MongoDatabaseAdapter
 
 /**
  * Ayudante sencillo para las operaciones de colección.
@@ -18,7 +18,7 @@ import org.bson.Document
  * @property database Base de datos sobre la que se ejecutan las operaciones de colecciones.
  */
 class CollectionManager(
-    private val database: MongoDatabase,
+    private val database: MongoDatabaseAdapter,
 ) {
     /**
      * Lista las colecciones disponibles en la base de datos seleccionada.
@@ -33,7 +33,7 @@ class CollectionManager(
      * @param collectionName Nombre de la colección que se quiere crear.
      */
     fun createCollectionIfMissing(collectionName: String) {
-        DatabaseManager.validateName(collectionName, "colección")
+        MongoNameValidator.validateName(collectionName, "colección")
         if (collectionName !in listCollectionNames()) {
             database.createCollection(collectionName)
         }
@@ -49,8 +49,8 @@ class CollectionManager(
      * @param document Documento inicial que fuerza la creación de la colección.
      */
     fun materializeCollection(collectionName: String, document: Document = Document("creada", true)) {
-        DatabaseManager.validateName(collectionName, "colección")
-        database.getCollection(collectionName).insertOne(document)
+        MongoNameValidator.validateName(collectionName, "colección")
+        database.insertDocument(collectionName, document)
     }
 
     /**
@@ -64,8 +64,8 @@ class CollectionManager(
      * @throws IllegalArgumentException Si alguno de los nombres no es válido.
      */
     fun renameCollection(currentName: String, newName: String) {
-        DatabaseManager.validateName(currentName, "colección origen")
-        DatabaseManager.validateName(newName, "colección destino")
+        MongoNameValidator.validateName(currentName, "colección origen")
+        MongoNameValidator.validateName(newName, "colección destino")
         // `renameCollection` es un comando administrativo que requiere el nombre completo
         // `baseDeDatos.coleccion`, por eso aquí se construye manualmente el documento.
         database.runCommand(
@@ -82,7 +82,7 @@ class CollectionManager(
      * @param collectionName Nombre de la colección a eliminar.
      */
     fun dropCollection(collectionName: String) {
-        DatabaseManager.validateName(collectionName, "colección")
-        database.getCollection(collectionName).drop()
+        MongoNameValidator.validateName(collectionName, "colección")
+        database.dropCollection(collectionName)
     }
 }

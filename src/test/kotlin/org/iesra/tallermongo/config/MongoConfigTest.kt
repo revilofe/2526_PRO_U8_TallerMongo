@@ -17,6 +17,7 @@ class MongoConfigTest : DescribeSpec({
 
             config.uri shouldBe "mongodb+srv://usuario:password@cluster.mongodb.net/"
             config.databaseName shouldBe "biblioteca_digital"
+            config.driverProvider shouldBe MongoDriverProvider.MONGODB_KOTLIN
         }
 
         it("debe usar la base de datos por defecto cuando la variable no está definida") {
@@ -25,6 +26,30 @@ class MongoConfigTest : DescribeSpec({
             }
 
             config.databaseName shouldBe "taller_mongo"
+        }
+
+        it("debe cargar KMongo como proveedor cuando se indica en el entorno") {
+            val config = MongoConfig.fromEnvironment { key ->
+                when (key) {
+                    "MONGODB_URI" -> "mongodb://localhost:27017"
+                    "MONGODB_DRIVER" -> "KMONGO"
+                    else -> null
+                }
+            }
+
+            config.driverProvider shouldBe MongoDriverProvider.KMONGO
+        }
+
+        it("debe rechazar proveedores de driver no soportados") {
+            shouldThrow<IllegalArgumentException> {
+                MongoConfig.fromEnvironment { key ->
+                    when (key) {
+                        "MONGODB_URI" -> "mongodb://localhost:27017"
+                        "MONGODB_DRIVER" -> "otro"
+                        else -> null
+                    }
+                }
+            }
         }
 
         it("debe rechazar la ausencia de URI") {

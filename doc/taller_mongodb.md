@@ -1,8 +1,8 @@
-# Taller práctico de MongoDB con Kotlin y KMongo
+# Taller práctico de MongoDB con Kotlin
 
 ## 1. Objetivo
 
-En este taller aprenderás a trabajar con MongoDB Atlas desde una aplicación Kotlin. El recorrido está organizado de forma progresiva:
+En este taller aprenderás a trabajar con MongoDB Atlas desde una aplicación Kotlin usando el driver oficial de MongoDB para Kotlin. El recorrido está organizado de forma progresiva:
 
 1. Configurar la conexión a MongoDB sin escribir credenciales en el código.
 2. Gestionar bases de datos.
@@ -31,10 +31,11 @@ src/test/kotlin/org/iesra/tallermongo/
 - Usuario de base de datos configurado en Atlas.
 - IP autorizada en el panel de acceso de Atlas.
 
-En este proyecto usarás Kotlin y KMongo:
+En este proyecto usarás Kotlin y el driver oficial de MongoDB para Kotlin:
 
 ```kotlin
-implementation("org.litote.kmongo:kmongo:4.11.0")
+implementation("org.mongodb:mongodb-driver-kotlin-sync:4.11.0")
+implementation("org.mongodb:bson-kotlin:4.11.0")
 ```
 
 Para las pruebas unitarias usarás Kotest con `DescribeSpec` y MockK.
@@ -95,15 +96,15 @@ En este taller no cubrirás toda la plataforma MongoDB. Te vas a centrar en lo q
 - operaciones CRUD
 - una estructura sencilla de clases en Kotlin para trabajar con MongoDB de forma ordenada
 
-## 4. MongoDB y KMongo en este taller
+## 4. MongoDB y Kotlin en este taller
 
 ### 4.1. Idea general
 
 En el proyecto intervienen tres niveles:
 
 1. Nuestras clases del taller, que organizan el código.
-2. KMongo, que ofrece una API más cómoda para Kotlin.
-3. El driver oficial de MongoDB y las clases BSON, que son la base real de la conexión y de las operaciones.
+2. El driver oficial de MongoDB para Kotlin, que ofrece la API de acceso a MongoDB.
+3. Las clases BSON y los builders del driver, que permiten construir documentos, filtros, ordenaciones y actualizaciones.
 
 La idea es que no empieces directamente con una API grande y dispersa. Primero verás una capa pequeña y comprensible, y luego irás conectando esa capa con las clases reales que ofrece MongoDB.
 
@@ -113,7 +114,6 @@ Las clases más importantes para trabajar con MongoDB en Kotlin son estas:
 
 | Clase             | Qué representa            | Uso en el taller                                      |
 |-------------------|---------------------------|-------------------------------------------------------|
-| `KMongo`          | Punto de entrada de KMongo | Crear el cliente usando la URI de conexión            |
 | `MongoClient`     | Cliente de conexión        | Abrir la conexión al clúster y acceder a bases de datos |
 | `MongoDatabase`   | Base de datos concreta     | Gestionar colecciones dentro de una base de datos     |
 | `MongoCollection` | Colección tipada           | Trabajar con documentos de un tipo concreto           |
@@ -121,18 +121,17 @@ Las clases más importantes para trabajar con MongoDB en Kotlin son estas:
 Imports habituales:
 
 ```kotlin
-import com.mongodb.client.MongoClient
-import com.mongodb.client.MongoCollection
-import com.mongodb.client.MongoDatabase
-import org.litote.kmongo.KMongo
+import com.mongodb.kotlin.client.MongoClient
+import com.mongodb.kotlin.client.MongoCollection
+import com.mongodb.kotlin.client.MongoDatabase
 ```
 
 Jerarquía básica:
 
 ```kotlin
-val client: MongoClient = KMongo.createClient(config.uri)
+val client: MongoClient = MongoClient.create(config.uri)
 val database: MongoDatabase = client.getDatabase("taller_mongo")
-val products: MongoCollection<Product> = database.getCollection("productos")
+val products: MongoCollection<Product> = database.getCollection<Product>("productos")
 ```
 
 ### 4.3. Clases BSON que también usamos
@@ -163,34 +162,38 @@ data class Product(
 Ejemplo con `Document`:
 
 ```kotlin
-database.getCollection(collectionName).insertOne(Document("creada", true))
+database.getCollection<Document>(collectionName).insertOne(Document("creada", true))
 ```
 
-### 4.4. Utilidades de KMongo que vamos a utilizar
+### 4.4. Builders del driver que vamos a utilizar
 
 | Utilidad                | Qué hace                              | Uso en el taller                              |
 |-------------------------|---------------------------------------|-----------------------------------------------|
-| `KMongo`                | Crea el cliente MongoDB               | Se usa en `MongoConnection`                   |
 | `getCollection`         | Obtiene colecciones tipadas           | Pedir colecciones de `Product` o `Libro`      |
 | `eq`                    | Filtro de igualdad                    | Buscar por nombre, título o identificador     |
 | `gt`                    | Filtro “mayor que”                    | Buscar productos por precio mínimo            |
 | `lte`                   | Filtro “menor o igual que”            | Detectar productos o libros sin unidades      |
 | `inc`                   | Incrementa un valor numérico          | Sumar stock o copias                          |
-| `setValue`              | Cambia el valor de un campo           | Actualizar precio, descuento o disponibilidad |
+| `set`                   | Cambia el valor de un campo           | Actualizar precio, descuento o disponibilidad |
 | `unset`                 | Elimina un campo                      | Quitar el campo `descuento`                   |
 | `ascending`             | Orden ascendente                      | Ordenar libros por título                     |
-| `replaceOne WithFilter` | Sustituye un documento con un filtro  | Implementar `upsert`                          |
-| `replaceUpsert`         | Inserta si no existe o reemplaza      | Completar la operación de `upsert`            |
+| `replaceOne`            | Sustituye un documento con un filtro  | Implementar `upsert`                          |
+| `ReplaceOptions`        | Configura opciones de reemplazo       | Activar `upsert`                              |
 
-En código, la utilidad de reemplazo se escribe sin espacio: `replaceOneWithFilter`.
-
-Por ejemplo, esta consulta:
+Los builders principales están en `com.mongodb.client.model`. Por ejemplo:
 
 ```kotlin
-collection.find(Product::precio gt minimumPrice).toList()
+import com.mongodb.client.model.Filters.gt
+import com.mongodb.client.model.Updates.set
 ```
 
-te resultará más legible que construir a mano un documento BSON con operadores de bajo nivel.
+Esta consulta:
+
+```kotlin
+collection.find(gt(Product::precio.name, minimumPrice)).toList()
+```
+
+te resultará más segura y legible que construir a mano un documento BSON con operadores de bajo nivel.
 
 ## 5. Dominio y Diagramas de apoyo para este taller
 
@@ -200,7 +203,7 @@ Antes de empezar a escribir código, es importante tener claro el dominio de la 
 
 Te conviene entender qué problema modela el taller y por qué aparecen las clases que vamos a usar.
 
-En el taller trabajarás sobre dos dominios sencillos pero muy útiles para aprender MongoDB. Vamos a trabajar con dos entidades principales: `Product` y `Book`. Estas entidades representan productos y libros que podrían estar en una tienda en línea. Cada una tiene sus propios atributos y se almacenarán en colecciones separadas en MongoDB:
+En el taller trabajarás sobre dos dominios sencillos pero muy útiles para aprender MongoDB. Vamos a trabajar con dos entidades principales: `Product` y `Libro`. Estas entidades representan productos y libros que podrían estar en una tienda en línea o en una biblioteca. Cada una tiene sus propios atributos y se almacenará en colecciones separadas en MongoDB:
 
 1. Un **catálogo de productos**, que te permite practicar operaciones CRUD sobre **una única colección**.
 2. Una **biblioteca digital**, que te permite trabajar con **varias colecciones relacionadas**: autores, libros y préstamos.
@@ -210,26 +213,24 @@ Sobre esos dos dominios construiremos una pequeña arquitectura en Kotlin. La id
 #### 5.1.1. Qué representa cada clase y cómo se relaciona con las demás
 
 - `MongoConfig`: concentra la configuración de conexión. Sirve para leer la URI y el nombre de la base de datos desde variables de entorno y validar que esos valores existen.
-- `MongoConnection`: encapsula la apertura y el cierre del cliente MongoDB. Se apoya en `MongoConfig` y ofrece acceso al `MongoClient` y a la `MongoDatabase` configurada.
+- `MongoConnection`: encapsula la apertura y el cierre del cliente MongoDB. Se apoya en `MongoConfig` y en una fábrica de cliente para usar el driver configurado.
 - `DatabaseManager`: agrupa las operaciones básicas sobre bases de datos. Se usa en la primera parte del taller para aprender a listar, seleccionar, materializar y eliminar bases de datos.
-- `CollectionManager`: agrupa las operaciones sobre colecciones. Se apoya en una `MongoDatabase` concreta y te permite listar, crear, renombrar y eliminar colecciones.
+- `CollectionManager`: agrupa las operaciones sobre colecciones. Se apoya en una base de datos adaptada al driver configurado y te permite listar, crear, renombrar y eliminar colecciones.
 - `Product`: representa un documento de la colección `productos`. Es el modelo del dominio usado en el módulo CRUD.
-- `ProductRepository`: define el contrato de persistencia para productos. Su función es separar la lógica de negocio del acceso concreto a MongoDB.
-- `MongoProductRepository`: implementa `ProductRepository` usando `MongoCollection<Product>` y utilidades de KMongo. Es la clase que realmente ejecuta las operaciones sobre la colección `productos`.
+- `ProductRepository`: define el contrato de persistencia para productos. La base de datos adaptada crea la implementación concreta del driver activo.
 - `ProductService`: coordina la validación y el uso del repositorio de productos. Es el punto desde el que se lanzan las operaciones del módulo de productos.
 - `Autor`: representa un documento de la colección `autores`.
 - `Libro`: representa un documento de la colección `libros`.
 - `Prestamo`: representa un documento de la colección `prestamos`.
-- `LibraryRepository`: define el contrato de persistencia para el dominio de biblioteca. Reúne operaciones que afectan a autores, libros y préstamos.
-- `MongoLibraryRepository`: implementa `LibraryRepository` apoyándose en tres colecciones tipadas: autores, libros y préstamos.
+- `LibraryRepository`: define el contrato de persistencia del ejemplo de biblioteca. La base de datos adaptada crea la implementación concreta del driver activo.
 - `BibliotecaService`: coordina las validaciones y las operaciones del dominio de biblioteca. Aquí se ve mejor cómo una operación funcional puede implicar varias colecciones.
 - `LibraryCounts`: actúa como objeto resumen para devolver el recuento de documentos de las tres colecciones del dominio de biblioteca.
 
 Las relaciones más importantes del diagrama de clases son estas:
 
-- `MongoConnection` usa `MongoConfig` para crear la conexión.
-- `ProductService` depende de `ProductRepository`, y `MongoProductRepository` es su implementación real para MongoDB.
-- `BibliotecaService` depende de `LibraryRepository`, y `MongoLibraryRepository` es su implementación real para MongoDB.
+- `MongoConnection` usa `MongoConfig` para crear la conexión con el driver seleccionado.
+- `ProductService` depende de `ProductRepository`, no de una clase concreta del driver.
+- `BibliotecaService` depende de `LibraryRepository`, no de una clase concreta del driver.
 - Los repositorios MongoDB persisten los modelos del dominio (`Product`, `Autor`, `Libro`, `Prestamo`).
 - `BibliotecaService` construye `LibraryCounts` cuando necesita devolver un resumen del estado del sistema.
 
@@ -250,8 +251,8 @@ El diagrama de secuencia muestra dos ejemplos pequeños pero representativos del
 1. `Main` crea o recibe un objeto `Product`.
 2. `Main` llama a `ProductService.register(product)`.
 3. `ProductService` valida los datos del producto antes de persistirlo.
-4. Si el producto es válido, el servicio delega en `MongoProductRepository`.
-5. `MongoProductRepository` usa la colección `MongoCollection<Product>` para ejecutar `insertOne(product)`.
+4. Si el producto es válido, el servicio delega en `ProductRepository`.
+5. La implementación MongoDB del repositorio usa la colección `MongoCollection<Product>` para ejecutar `insertOne(product)`.
 6. El resultado vuelve al repositorio, después al servicio y finalmente a `Main`.
 
 Este flujo enseña una idea importante: aunque MongoDB permite insertar directamente en la colección, en el taller añadimos un servicio intermedio para dejar claras las validaciones y la responsabilidad de cada capa.
@@ -260,7 +261,7 @@ Este flujo enseña una idea importante: aunque MongoDB permite insertar directam
 
 1. `Main` llama a `BibliotecaService.returnLoan(prestamo)`.
 2. `BibliotecaService` valida primero que el préstamo tenga un identificador correcto.
-3. Después pide a `MongoLibraryRepository` que marque el préstamo como devuelto en la colección `prestamos`.
+3. Después pide a `LibraryRepository` que marque el préstamo como devuelto en la colección `prestamos`.
 4. A continuación, el mismo servicio pide al repositorio que incremente en una unidad las copias del libro relacionado en la colección `libros`.
 5. El servicio combina ambos resultados y devuelve un único resultado final a `Main`.
 
@@ -312,9 +313,8 @@ Crea tus variables de entorno antes de ejecutar la aplicación:
 
 ```text
 MONGODB_URI=mongodb+srv://usuario:password@cluster.mongodb.net/
-MONGODB_URI=mongodb+srv://eferoli398:iesra.daw1@cluster0.cftfgg7.mongodb.net/
 MONGODB_DATABASE=taller_mongo
-MONGODB_DATABASE=Cluster0
+MONGODB_DRIVER=MONGODB_KOTLIN
 ```
 
 El repositorio incluye un fichero `.env.example` con el formato esperado, pero no debes guardar credenciales reales en Git.
@@ -327,15 +327,32 @@ La clase `MongoConfig` lee la configuración desde variables de entorno:
 val config = MongoConfig.fromEnvironment()
 ```
 
-La clase valida que la URI y el nombre de la base de datos no estén vacíos. Si no defines `MONGODB_DATABASE`, usarás `taller_mongo` como base de datos por defecto.
+La clase valida que la URI y el nombre de la base de datos no estén vacíos. Si no defines `MONGODB_DATABASE`, usarás `taller_mongo` como base de datos por defecto. Si no defines `MONGODB_DRIVER`, usarás `MONGODB_KOTLIN`.
 
-### 6.4. Conexión a MongoDB
+### 6.4. Elegir el proveedor de acceso
 
-La clase `MongoConnection` crea un cliente reutilizable con KMongo. Cumpliendo con uno de los principios de la programación orientada a objetos, el cliente se encapsula dentro de la clase `MongoConnection`. 
+El taller usa el driver oficial de MongoDB para Kotlin como opción principal:
+
+```text
+MONGODB_DRIVER=MONGODB_KOTLIN
+```
+
+El proyecto también conserva una implementación alternativa con KMongo para comparar o mantener compatibilidad durante la migración:
+
+```text
+MONGODB_DRIVER=KMONGO
+```
+
+Esta elección afecta a la fábrica que usa `MongoConnection`, pero no cambia los servicios ni los modelos del dominio. En la documentación del taller trabajaremos con el driver oficial.
+
+### 6.5. Conexión a MongoDB
+
+La clase `MongoConnection` crea un cliente reutilizable con el driver configurado. Cumpliendo con uno de los principios de la programación orientada a objetos, el cliente se encapsula dentro de la clase de conexión.
+
+La diferencia entre el driver oficial y KMongo queda aislada en una fábrica de clientes. Para el driver oficial, la fábrica crea el cliente así:
 
 ```kotlin
-// Parte de la clase MongoConnection. Crea un cliente reutilizable.
-private val client: MongoClient by lazy { KMongo.createClient(config.uri) }
+MongoClient.create(config.uri)
 ```
 
 Utilizamos este mismo cliente para acceder a la base de datos y otras operaciones. El cliente permanece abierto mientras se necesite y se cierra al finalizar.
@@ -371,7 +388,7 @@ println(names)
 
 ### 7.3. Seleccionar una base de datos
 
-Con el método `selectDatabase()` puedes obtener una instancia de `MongoDatabase` para una base de datos concreta. Sin embargo, esta operación no crea la base de datos en el servidor ni la hace visible hasta que insertas el primer documento.
+Con el método `selectDatabase()` puedes obtener la base de datos adaptada al driver configurado. Sin embargo, esta operación no crea la base de datos en el servidor ni la hace visible hasta que insertas el primer documento.
 
 ```kotlin
 val academia = databaseManager.selectDatabase("academia")
@@ -435,11 +452,11 @@ databaseManager.dropDatabase("academia")
 
 Estudiar el código de `DatabaseManager` te ayudará a entender cómo funcionan estas operaciones a nivel de MongoDB. En particular, el método `materializeDatabase()` es un truco útil para forzar la creación de una base de datos sin necesidad de insertar datos reales.
 
-Diferencia entre los metodos y códigos creados por nosotros y los métodos de la librería KMongo:
-- `listDatabaseNames()`, `selectDatabase()`, `dropDatabase()` son métodos de la clase `MongoClient` de KMongo.
-- `materializeDatabase()` es un método personalizado que hemos creado para insertar un documento temporal y forzar la creación de la base de datos. Este método no existe en KMongo, es una solución específica para este taller.
-- En `DatabaseManager`, estamos utilizando el cliente de KMongo para implementar estas operaciones, pero `materializeDatabase()` es una función adicional que hemos definido para cumplir con el requisito de materializar la base de datos.
-- En resumen, `listDatabaseNames()`, `selectDatabase()`, `dropDatabase()` son parte de la API de KMongo, mientras que `materializeDatabase()` es una función personalizada que hemos creado para este taller.
+Diferencia entre los métodos del driver y los métodos creados por nosotros:
+
+- `listDatabaseNames()`, `getDatabase()` y `drop()` pertenecen al driver o al adaptador común que lo envuelve.
+- `selectDatabase()`, `materializeDatabase()` y `dropDatabase()` son métodos del taller que agrupan esas llamadas para que el ejemplo sea más fácil de seguir.
+- `materializeDatabase()` inserta un documento temporal porque MongoDB no muestra una base de datos vacía hasta que contiene datos.
 
 
 ## 8. Módulo 2. Gestión de colecciones
@@ -521,13 +538,13 @@ println(collections.listCollectionNames())
 
 ## 9. Módulo 3. Operaciones CRUD sobre documentos
 
-Para trabajar con documentos, lo ideal es usar colecciones tipadas. En este módulo usarás `MongoCollection<Product>` para gestionar productos de un catálogo. 
+Para trabajar con documentos, lo ideal es usar modelos tipados. En este módulo usarás `Product` para gestionar productos de un catálogo y un repositorio para aislar el acceso a MongoDB.
 
-Ten en cuenta que MongoDB no impone un esquema rígido, pero al usar colecciones tipadas con KMongo puedes beneficiarte de la seguridad de tipos y de una API más cómoda para construir consultas.
+Ten en cuenta que MongoDB no impone un esquema rígido, pero al usar colecciones tipadas con el driver oficial puedes beneficiarte de la seguridad de tipos y de una API clara para construir consultas.
 
 La colección `productos` se usará para practicar las operaciones CRUD (Crear, Leer, Actualizar, Eliminar) sobre documentos de tipo `Product`.
 
-Será el repositorio `MongoProductRepository` el que implemente esas operaciones usando KMongo, y el servicio `ProductService` el que coordine la lógica de negocio y las validaciones.
+Será el repositorio `ProductRepository` creado desde la base de datos el que implemente esas operaciones usando el driver configurado, y el servicio `ProductService` el que coordine la lógica de negocio y las validaciones.
 
 
 ### 9.1. Qué vas a aprender
@@ -553,18 +570,17 @@ data class Product(
 Las operaciones se organizan en dos piezas:
 
 - `ProductRepository`: contrato de acceso a datos.
-- `MongoProductRepository`: implementación con KMongo.
+- `database.productRepository("productos")`: crea la implementación MongoDB adecuada para la colección `productos`.
 - `ProductService`: validaciones y coordinación de operaciones.
 
 Esta separación te permite probar la lógica sin conectarte a MongoDB real.
 
 ### 9.2. Crear el servicio de productos
 
-Con la base de datos seleccionada, obtén la colección tipada `productos` y crea el servicio de productos:
+Con la base de datos seleccionada, crea el servicio de productos:
 
 ```kotlin
-val products = database.getCollection<Product>("productos")
-val productService = ProductService(MongoProductRepository(products))
+val productService = ProductService(database.productRepository("productos"))
 ```
 
 
@@ -604,10 +620,10 @@ val allProducts = productService.findAll()
 val expensiveProducts = productService.findExpensiveProducts(50.0)
 ```
 
-Internamente, `MongoProductRepository` usa filtros tipados de KMongo, por ejemplo:
+Internamente, la implementación del driver oficial usa builders de MongoDB, por ejemplo:
 
 ```kotlin
-collection.find(Product::precio gt minimumPrice).toList()
+collection.find(gt(Product::precio.name, minimumPrice)).toList()
 ```
 
 ### 9.5. Actualizar documentos
@@ -622,7 +638,7 @@ productService.increaseStockByCategory("libros", 50)
 
 También existe una operación de tipo `upsert`: actualiza si existe y crea si no existe.
 
-En `MongoProductRepository` se implementa con la extensión de KMongo `replaceOneWithFilter` y `replaceUpsert()` para trabajar con el documento `Product` completo y mantener `_id` como `String`.
+En la implementación del driver oficial se usa `replaceOne()` y `ReplaceOptions().upsert(true)` para trabajar con el documento `Product` completo y mantener `_id` como `String`.
 
 ```kotlin
 productService.upsert(
@@ -649,7 +665,7 @@ Practicar inserción y consulta de documentos con una colección `productos`.
 #### 9.7.2. Pasos
 
 1. Usa la base de datos configurada para el taller.
-2. Obtén la colección tipada `productos`.
+2. Crea el servicio de productos con `database.productRepository("productos")`.
 3. Inserta un producto individual.
 4. Inserta varios productos más.
 5. Muestra todos los productos.
@@ -659,7 +675,7 @@ Practicar inserción y consulta de documentos con una colección `productos`.
 
 ```kotlin
 val productService = ProductService(
-    MongoProductRepository(database.getCollection<Product>("productos"))
+    database.productRepository("productos")
 )
 
 productService.register(
@@ -721,7 +737,7 @@ En este dominio usarás tres modelos:
 
 Y también usarás dos capas sencillas:
 
-- `LibraryRepository` / `MongoLibraryRepository`: acceso a MongoDB.
+- `LibraryRepository`: acceso a MongoDB a través de la implementación creada por la base de datos adaptada.
 - `BibliotecaService`: validaciones y operaciones de negocio.
 
 ### 10.2. Modelos principales
@@ -768,15 +784,11 @@ La clase `ObjectId` se usa para generar un identificador único por defecto para
 
 ### 10.3. Crear el servicio de biblioteca
 
-El servicio de biblioteca se apoya en un repositorio que gestiona las tres colecciones relacionadas: `autores`, `libros` y `prestamos`. Para crear el servicio, primero obtén las colecciones tipadas y luego construye el servicio con el repositorio MongoDB.
+El servicio de biblioteca se apoya en un repositorio que gestiona las tres colecciones relacionadas: `autores`, `libros` y `prestamos`. Para crear el servicio, usa la base de datos adaptada para construir el repositorio MongoDB.
 
 ```kotlin
 val bibliotecaService = BibliotecaService(
-    MongoLibraryRepository(
-        autores = database.getCollection<Autor>("autores"),
-        libros = database.getCollection<Libro>("libros"),
-        prestamos = database.getCollection<Prestamo>("prestamos"),
-    )
+    database.libraryRepository()
 )
 ```
 
@@ -790,7 +802,7 @@ Las operaciones del servicio de biblioteca incluyen:
 - Borrar los préstamos devueltos.
 - Obtener un resumen con el recuento de documentos.
 
-Todas estas operaciones se implementan en el servicio `BibliotecaService` usando el repositorio `MongoLibraryRepository` para interactuar con MongoDB.
+Todas estas operaciones se implementan en el servicio `BibliotecaService` usando `LibraryRepository` para interactuar con MongoDB.
 
 ```kotlin
 bibliotecaService.registerAutores(autores)
@@ -934,8 +946,10 @@ Para ejecutarla realmente, define la URI de Atlas y lanza los tests con una JVM 
 
 ```text
 export MONGODB_URI="mongodb+srv://usuario:password@cluster.mongodb.net/"
-JAVA_HOME="/home/edu/.sdkman/candidates/java/21.0.1-tem" ./gradlew test
+./gradlew test
 ```
+
+Si tu sistema no usa JDK 21 por defecto, configura `JAVA_HOME` para apuntar a una instalación compatible antes de ejecutar Gradle.
 
 Si también quieres indicar una base de datos por defecto para la aplicación, puedes definir:
 
@@ -952,6 +966,7 @@ Primero define la configuración:
 ```text
 export MONGODB_URI="mongodb+srv://usuario:password@cluster.mongodb.net/"
 export MONGODB_DATABASE="taller_mongo"
+export MONGODB_DRIVER="MONGODB_KOTLIN"
 ```
 
 Después ejecuta `Main.kt` desde el IDE o configura una tarea de ejecución Gradle si el proyecto la incorpora más adelante.
@@ -960,6 +975,8 @@ Después ejecuta `Main.kt` desde el IDE o configura una tarea de ejecución Grad
 
 - No hay credenciales en el código fuente.
 - Se usan variables de entorno para la conexión.
+- La documentación del taller usa el driver oficial de MongoDB para Kotlin.
+- El proyecto conserva una opción configurable para ejecutar la implementación KMongo cuando necesites comparar o migrar código.
 - Se usan colecciones tipadas con `data class`.
 - La lógica se puede probar sin MongoDB real mediante interfaces y MockK.
 - Las operaciones peligrosas, como eliminar bases de datos, están separadas en métodos explícitos.

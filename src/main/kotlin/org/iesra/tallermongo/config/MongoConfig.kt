@@ -10,12 +10,14 @@ package org.iesra.tallermongo.config
  * normalmente mediante variables de entorno, para evitar publicar secretos en
  * el repositorio.
  *
- * @property uri URI de conexión al cluster MongoDB. Ej: `mongodb+srv://usuario:
+ * @property uri URI de conexión al cluster MongoDB.
  * @property databaseName Nombre de la base de datos que se usará por defecto.
+ * @property driverProvider Proveedor de acceso a MongoDB que usará la aplicación.
  */
 data class MongoConfig(
     val uri: String,
     val databaseName: String,
+    val driverProvider: MongoDriverProvider = MongoDriverProvider.MONGODB_KOTLIN,
 ) {
     init {
         require(uri.isNotBlank()) { "La URI de MongoDB no puede estar vacía." }
@@ -25,6 +27,7 @@ data class MongoConfig(
     companion object {
         private const val URI_VARIABLE = "MONGODB_URI"
         private const val DATABASE_VARIABLE = "MONGODB_DATABASE"
+        private const val DRIVER_VARIABLE = "MONGODB_DRIVER"
         private const val DEFAULT_DATABASE = "taller_mongo"
 
         /**
@@ -41,7 +44,10 @@ data class MongoConfig(
             val uri = env(URI_VARIABLE)
                 ?: error("Define la variable de entorno $URI_VARIABLE antes de ejecutar la aplicación.")
             val database = env(DATABASE_VARIABLE) ?: DEFAULT_DATABASE
-            return MongoConfig(uri = uri, databaseName = database)
+            val driverProvider = env(DRIVER_VARIABLE)
+                ?.let(MongoDriverProvider::from)
+                ?: MongoDriverProvider.MONGODB_KOTLIN
+            return MongoConfig(uri = uri, databaseName = database, driverProvider = driverProvider)
         }
     }
 }

@@ -1,8 +1,8 @@
 package org.iesra.tallermongo
 
-import com.mongodb.client.MongoClient
-import com.mongodb.client.MongoDatabase
 import org.bson.Document
+import org.iesra.tallermongo.connection.MongoClientAdapter
+import org.iesra.tallermongo.connection.MongoDatabaseAdapter
 
 /**
  * Ayudante sencillo para las operaciones de base de datos del primer módulo.
@@ -13,7 +13,7 @@ import org.bson.Document
  * @property client Cliente MongoDB desde el que se consultan y gestionan las bases de datos.
  */
 class DatabaseManager(
-    private val client: MongoClient,
+    private val client: MongoClientAdapter,
 ) {
     /**
      * Lista los nombres de bases de datos visibles en el cluster MongoDB conectado.
@@ -29,8 +29,8 @@ class DatabaseManager(
      * @return La referencia a la base de datos indicada.
      * @throws IllegalArgumentException Cuando el nombre de la base de datos es inválido.
      */
-    fun selectDatabase(databaseName: String): MongoDatabase {
-        validateName(databaseName, "base de datos")
+    fun selectDatabase(databaseName: String): MongoDatabaseAdapter {
+        MongoNameValidator.validateName(databaseName, "base de datos")
         return client.getDatabase(databaseName)
     }
 
@@ -48,7 +48,7 @@ class DatabaseManager(
         val database = selectDatabase(databaseName)
         // La base de datos aparece realmente en MongoDB cuando se escribe al menos
         // un documento en alguna colección. Por eso aquí se inserta un marcador mínimo.
-        database.getCollection(collectionName).insertOne(Document("creada", true))
+        database.insertDocument(collectionName, Document("creada", true))
     }
 
     /**
@@ -70,8 +70,7 @@ class DatabaseManager(
          * @throws IllegalArgumentException Cuando el nombre está vacío o contiene `/`.
          */
         fun validateName(name: String, resource: String) {
-            require(name.isNotBlank()) { "El nombre de $resource no puede estar vacío." }
-            require(!name.contains('/')) { "El nombre de $resource no debe contener '/'." }
+            MongoNameValidator.validateName(name, resource)
         }
     }
 }

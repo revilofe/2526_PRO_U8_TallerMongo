@@ -2,19 +2,21 @@ classDiagram
     class MongoConfig {
         +String uri
         +String databaseName
+        +MongoDriverProvider driverProvider
         +fromEnvironment(env)
     }
 
     class MongoConnection {
         -MongoConfig config
-        +client() MongoClient
-        +database() MongoDatabase
+        -MongoClientFactory clientFactory
+        +client() MongoClientAdapter
+        +database() MongoDatabaseAdapter
         +close()
     }
 
     class DatabaseManager {
         +listDatabaseNames() List~String~
-        +selectDatabase(databaseName) MongoDatabase
+        +selectDatabase(databaseName) MongoDatabaseAdapter
         +materializeDatabase(databaseName, collectionName)
         +dropDatabase(databaseName)
     }
@@ -31,12 +33,14 @@ classDiagram
     class ProductRepository {
         <<interface>>
     }
-    class MongoProductRepository
     class BibliotecaService
     class LibraryRepository {
         <<interface>>
     }
-    class MongoLibraryRepository
+    class MongoDatabaseAdapter {
+        +productRepository(collectionName) ProductRepository
+        +libraryRepository() LibraryRepository
+    }
     class Product
     class Autor
     class Libro
@@ -44,12 +48,13 @@ classDiagram
     class LibraryCounts
 
     MongoConnection --> MongoConfig : usa
+    MongoConnection --> MongoDatabaseAdapter : crea
+    MongoDatabaseAdapter --> ProductRepository : crea
+    MongoDatabaseAdapter --> LibraryRepository : crea
     ProductService --> ProductRepository : depende de
-    ProductRepository <|.. MongoProductRepository : implementa
-    MongoProductRepository --> Product : persiste
     BibliotecaService --> LibraryRepository : depende de
-    LibraryRepository <|.. MongoLibraryRepository : implementa
-    MongoLibraryRepository --> Autor : persiste
-    MongoLibraryRepository --> Libro : persiste
-    MongoLibraryRepository --> Prestamo : persiste
+    ProductRepository --> Product : persiste
+    LibraryRepository --> Autor : persiste
+    LibraryRepository --> Libro : persiste
+    LibraryRepository --> Prestamo : persiste
     BibliotecaService --> LibraryCounts : construye
