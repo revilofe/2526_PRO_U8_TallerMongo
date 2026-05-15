@@ -18,7 +18,7 @@ description: "Best practices for writing clear, progressive and student-friendly
 
 ## Main Goal
 
-Write documentation that helps programming students understand the workshop step by step without assuming prior mastery of MongoDB, driver de MongoDB para Kotlin or Kotlin.
+Write documentation that helps programming students understand the workshop step by step without assuming prior mastery of MongoDB, the MongoDB Kotlin driver, or Kotlin.
 
 ## Writing Principles
 
@@ -36,7 +36,7 @@ When documenting a new section, follow this order whenever possible:
 
 1. What the section teaches.
 2. Why it is useful in a MongoDB application.
-3. Minimal Kotlin/driver de MongoDB para Kotlin example.
+3. Minimal Kotlin example with the MongoDB Kotlin driver.
 4. Explanation of the example.
 5. Common mistakes or warnings.
 6. Small exercise or practice prompt.

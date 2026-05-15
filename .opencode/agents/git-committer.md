@@ -171,7 +171,7 @@ fix(config): read Mongo URI from environment
 Ejemplo con cuerpo:
 
 ```text
-docs: add driver de MongoDB para Kotlin setup instructions
+docs: add MongoDB Kotlin driver setup instructions
 
 Explain how to configure Gradle, define the MongoDB URI
 through environment variables, and run the first connection
@@ -221,7 +221,7 @@ Commit propuesto:
 feat: add MongoDB and Kotlin best practices skills
 
 - Add kotlin-best-practices skill with SOLID principles
-- Add mongo-best-practices skill with driver de MongoDB para Kotlin operations
+- Add mongo-best-practices skill with MongoDB Kotlin driver operations
 - Update AGENTS.md with project rules
 
 ¿Confirmas este commit? Responde con "sí", "yes" o indica cómo quieres modificarlo.
@@ -290,7 +290,7 @@ Hash:
 a1b2c3d
 
 Mensaje:
-docs: add driver de MongoDB para Kotlin setup guide
+docs: add MongoDB Kotlin driver setup guide
 ```
 
 ## Reglas importantes
@@ -441,7 +441,7 @@ Commit propuesto:
 feat: add MongoDB and Kotlin best practices skills
 
 - Add kotlin-best-practices skill with SOLID principles
-- Add mongo-best-practices skill with driver de MongoDB para Kotlin operations
+- Add mongo-best-practices skill with MongoDB Kotlin driver operations
 - Update AGENTS.md with project rules
 
 ¿Confirmas este commit? Responde con "sí", "yes" o indica cómo quieres modificarlo.
@@ -459,7 +459,7 @@ Entonces ejecuta:
 git add AGENTS.md .opencode/skills/kotlin-best-practices/SKILL.md .opencode/skills/mongo-best-practices/SKILL.md
 git commit -m "feat: add MongoDB and Kotlin best practices skills" -m "Add kotlin-best-practices skill with SOLID principles
 
-Add mongo-best-practices skill with driver de MongoDB para Kotlin operations
+Add mongo-best-practices skill with MongoDB Kotlin driver operations
 
 Update AGENTS.md with project rules"
 git log -1 --oneline

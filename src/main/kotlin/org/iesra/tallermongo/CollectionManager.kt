@@ -6,7 +6,8 @@ import org.bson.Document
 /**
  * Ayudante sencillo para las operaciones de colección.
  *
- * La clase expone solo las operaciones necesarias para que el alumnado se centre en cómo MongoDB crea, lista, renombra y elimina colecciones dentro de una base de datos.
+ * La clase expone solo las operaciones necesarias para que el alumnado se centre
+ * en cómo MongoDB crea, lista, renombra y elimina colecciones dentro de una base de datos.
  *
  * Las **colecciones** son un concepto fundamental en MongoDB: son los contenedores de documentos dentro de una base de datos.
  * MongoDB crea colecciones de forma implícita al insertar el primer documento, pero también permite crearlas explícitamente.

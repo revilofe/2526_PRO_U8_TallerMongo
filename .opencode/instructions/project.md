@@ -17,7 +17,7 @@
 
 ## MongoDB Guidance
 
-- Use driver de MongoDB para Kotlin as the primary MongoDB library unless there is a clear reason not to.
+- Use the MongoDB Kotlin driver as the primary MongoDB library unless there is a clear reason not to.
 - Prefer typed collections and Kotlin data classes when they improve readability.
 - Keep database examples focused on CRUD learning goals.
 - Separate unit tests from tests that require a real MongoDB instance.
