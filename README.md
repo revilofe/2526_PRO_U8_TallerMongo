@@ -30,6 +30,20 @@ El taller cubre:
 - ampliaciones sobre referencias por `_id` y consultas con `$lookup`
 - proyecto integrado final de mediateca con varias colecciones relacionadas
 
+## Ejercicios
+
+Accede a la documentación del taller, estúdiala y completa todas las actividades. Finalmente, realiza el último ejercicio: **Proyecto integrado**.
+
+**Parte 1:**  Realización del taller práctico de MongoDB con Kotlin, siguiendo la documentación y completando los ejercicios propuestos.
+- Lee el documento del taller, desarrolla las soluciones y ejecuta los ejercicios propuestos.
+- Los ejercicios deben estar en el paquete `org.iesra.tallermongo.ejercicios` y en los archivos `Ejercicio1.kt`, `Ejercicio2.kt`, ..., `Ejercicio6.kt`.
+
+**Parte 2:**  Elaboración de un proyecto integrado de mediateca, aplicando los conocimientos adquiridos en el taller.
+- Lee, comprende y desarrolla el apartado **Proyecto integrado**.
+- Este ejercicio debe estar en el paquete `org.iesra.tallermongo.ejercicios` y en el archivo `Ejercicio7.kt`.
+
+
+
 ## Prueba de Concepto con IA
 
 Además del taller de MongoDB, este repositorio incluye una prueba de concepto sobre cómo configurar un proyecto para trabajar con ayuda de IA.
